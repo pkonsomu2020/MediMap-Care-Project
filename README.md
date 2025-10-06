@@ -64,6 +64,15 @@ A comprehensive digital health platform featuring:
 - **Tailwind CSS** - Utility-first styling
 - **shadcn/ui** - Accessible component library
 
+### **Backend**
+- **Node.js** - JavaScript runtime
+- **Express.js** - Web application framework
+- **TypeScript** - Type-safe backend development
+- **PostgreSQL** - Relational database
+- **Sequelize** - ORM for database operations
+- **JWT** - Authentication tokens
+- **bcrypt** - Password hashing
+
 ### **Mapping & Location**
 - **Leaflet.js** - Interactive mapping library
 - **OpenStreetMap** - Free, open-source map tiles
@@ -81,31 +90,50 @@ A comprehensive digital health platform featuring:
 - **TypeScript** - Static type checking
 - **PostCSS** - CSS processing
 - **Autoprefixer** - Cross-browser compatibility
+- **Concurrently** - Run multiple processes simultaneously
 
 ## 🏗️ **Project Structure**
 
 ```
-src/
-├── components/           # Reusable UI components
-│   ├── dashboard/       # Dashboard-specific components
-│   ├── landing/         # Landing page components
-│   ├── map/            # Map-related components
-│   └── ui/             # Base UI components
-├── pages/              # Application pages
-│   ├── dashboard/      # Dashboard pages
-│   ├── Landing.tsx     # Homepage
-│   ├── Login.tsx        # Authentication
-│   └── Signup.tsx       # User registration
-├── services/           # API and utility services
-├── hooks/             # Custom React hooks
-├── lib/               # Utility functions
-└── types/             # TypeScript type definitions
+medimap-care/
+├── frontend/              # React TypeScript frontend
+│   ├── src/
+│   │   ├── components/    # Reusable UI components
+│   │   │   ├── dashboard/ # Dashboard-specific components
+│   │   │   ├── landing/   # Landing page components
+│   │   │   ├── map/       # Map-related components
+│   │   │   └── ui/        # Base UI components
+│   │   ├── pages/         # Application pages
+│   │   │   ├── dashboard/ # Dashboard pages
+│   │   │   ├── Landing.tsx # Homepage
+│   │   │   ├── Login.tsx   # Authentication
+│   │   │   └── Signup.tsx  # User registration
+│   │   ├── services/      # API and utility services
+│   │   ├── hooks/         # Custom React hooks
+│   │   ├── lib/           # Utility functions
+│   │   └── types/         # TypeScript type definitions
+│   ├── public/            # Static assets
+│   ├── package.json       # Frontend dependencies
+│   └── vite.config.ts     # Vite configuration
+├── backend/               # Express TypeScript backend
+│   ├── src/
+│   │   ├── routes/        # API route handlers
+│   │   ├── models/        # Database models
+│   │   ├── controllers/   # Business logic
+│   │   ├── middleware/    # Express middleware
+│   │   └── app.ts         # Main application setup
+│   ├── package.json       # Backend dependencies
+│   └── tsconfig.json      # TypeScript configuration
+├── shared/                # Shared types and interfaces
+├── package.json           # Root workspace configuration
+└── README.md              # Project documentation
 ```
 
 ## 🚀 **Getting Started**
 
 ### **Prerequisites**
 - Node.js 18+ and npm
+- PostgreSQL database (local or cloud)
 - Modern web browser with geolocation support
 - Internet connection for map tiles
 
@@ -118,30 +146,69 @@ git clone https://github.com/your-username/medimap-care.git
 # Navigate to project directory
 cd medimap-care
 
-# Install dependencies
+# Install all dependencies (frontend, backend, root)
 npm install
 
-# Start development server
+# Set up environment variables
+cp backend/.env.example backend/.env
+# Edit backend/.env with your database URL and JWT secret
+
+# Start both frontend and backend in development
 npm run dev
 
-# Build for production
-npm run build
+# Or run them separately:
+npm run dev:frontend  # Frontend only
+npm run dev:backend   # Backend only
+```
+
+### **Environment Setup**
+
+Create `backend/.env` file:
+```env
+NODE_ENV=development
+PORT=8001
+DATABASE_URL=postgresql://username:password@localhost:5432/medimap_dev
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRES_IN=7d
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-email-password
+TWILIO_SID=your-twilio-sid
+TWILIO_AUTH_TOKEN=your-twilio-token
+TWILIO_PHONE_NUMBER=+1234567890
+```
+
+### **Database Setup**
+
+```bash
+# Navigate to backend
+cd backend
+
+# Run database migrations
+npm run migrate
+
+# Seed initial data (optional)
+npm run seed
 ```
 
 ### **Development Commands**
 
 ```bash
-# Start development server
-npm run dev
+# Root level commands (run both services)
+npm run dev              # Start frontend and backend concurrently
+npm run build            # Build both frontend and backend
+npm run lint             # Lint both projects
 
-# Build for production
-npm run build
+# Frontend commands
+npm run dev:frontend     # Start frontend only
+cd frontend && npm run dev
+cd frontend && npm run build
+cd frontend && npm run lint
 
-# Preview production build
-npm run preview
-
-# Run linting
-npm run lint
+# Backend commands
+npm run dev:backend      # Start backend only
+cd backend && npm run dev
+cd backend && npm run build
+cd backend && npm run test
 ```
 
 ## 🌍 **Kenya Healthcare Integration**
