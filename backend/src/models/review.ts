@@ -2,23 +2,23 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../sequelize';
 
 interface ReviewAttributes {
-  id: number;
-  patientId: number; // Foreign key to User
-  clinicId: number; // Foreign key to Clinic
+  id: number; // maps to review_id
+  userId: number; // maps to user_id
+  clinicId: number; // maps to clinic_id
   rating: number;
-  comment: string;
+  comment: string | null;
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface ReviewCreationAttributes extends Optional<ReviewAttributes, 'id'> {}
+interface ReviewCreationAttributes extends Optional<ReviewAttributes, 'id' | 'comment'> {}
 
 class Review extends Model<ReviewAttributes, ReviewCreationAttributes> implements ReviewAttributes {
   public id!: number;
-  public patientId!: number;
+  public userId!: number;
   public clinicId!: number;
   public rating!: number;
-  public comment!: string;
+  public comment!: string | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -27,36 +27,30 @@ class Review extends Model<ReviewAttributes, ReviewCreationAttributes> implement
 Review.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      field: 'review_id',
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    patientId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id',
-      },
+    userId: {
+      field: 'user_id',
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'users', key: 'user_id' },
     },
     clinicId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: false,
-      references: {
-        model: 'clinics',
-        key: 'id',
-      },
+      field: 'clinic_id',
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'clinics', key: 'clinic_id' },
     },
     rating: {
-      type: DataTypes.SMALLINT,
+      type: DataTypes.INTEGER,
       allowNull: false,
-      validate: {
-        min: 1,
-        max: 5,
-      },
+      validate: { min: 1, max: 5 },
     },
     comment: {
-      type: new DataTypes.TEXT,
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

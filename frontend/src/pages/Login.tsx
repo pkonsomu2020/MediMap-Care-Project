@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { api, setAuthToken } from "@/lib/api";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -12,10 +13,15 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual authentication
-    navigate("/dashboard/find-clinics");
+    try {
+      const { token } = await api.login({ email, password });
+      setAuthToken(token);
+      navigate("/dashboard/find-clinics");
+    } catch (err: any) {
+      alert(err.message || "Login failed");
+    }
   };
 
   return (

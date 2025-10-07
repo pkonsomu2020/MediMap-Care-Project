@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { api, setAuthToken } from "@/lib/api";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,10 +19,22 @@ const Signup = () => {
   });
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual signup
-    navigate("/dashboard/find-clinics");
+    try {
+      const role = userType === "clinic" ? "clinic" : "user";
+      const { token } = await api.register({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        role,
+      });
+      setAuthToken(token);
+      navigate("/dashboard/find-clinics");
+    } catch (err: any) {
+      alert(err.message || "Signup failed");
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

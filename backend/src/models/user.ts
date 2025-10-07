@@ -2,21 +2,25 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../sequelize';
 
 interface UserAttributes {
-  id: number;
+  id: number; // maps to user_id
+  name: string;
   email: string;
   password: string;
-  role: 'patient' | 'clinic';
+  phone: string | null;
+  role: 'user' | 'clinic' | 'admin';
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface UserCreationAttributes extends Optional<UserAttributes, 'id'> {}
+interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'phone' | 'role'> {}
 
 class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: number;
+  public name!: string;
   public email!: string;
   public password!: string;
-  public role!: 'patient' | 'clinic';
+  public phone!: string | null;
+  public role!: 'user' | 'clinic' | 'admin';
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -25,27 +29,38 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
 User.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      field: 'user_id',
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
+    name: {
+      type: DataTypes.STRING(128),
+      allowNull: false,
+    },
     email: {
-      type: new DataTypes.STRING(128),
+      type: DataTypes.STRING(128),
       allowNull: false,
       unique: true,
     },
     password: {
-      type: new DataTypes.STRING(128),
+      type: DataTypes.STRING(128),
       allowNull: false,
     },
+    phone: {
+      type: DataTypes.STRING(32),
+      allowNull: true,
+    },
     role: {
-      type: DataTypes.ENUM('patient', 'clinic'),
+      type: DataTypes.ENUM('user', 'clinic', 'admin'),
       allowNull: false,
+      defaultValue: 'user',
     },
   },
   {
     tableName: 'users',
     sequelize,
+    underscored: false,
   }
 );
 

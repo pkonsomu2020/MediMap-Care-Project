@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, MapPin, Star, Clock, Phone, Navigation } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,66 +10,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { api } from "@/lib/api";
 
-// Mock data for clinics
-const mockClinics = [
-  {
-    id: 1,
-    name: "City Care Clinic",
-    address: "123 Main St, Downtown",
-    distance: "2.5 km",
-    rating: 4.8,
-    reviews: 234,
-    specialty: "General Practice",
-    availability: "Available Today",
-    phone: "+1 (555) 123-4567",
-    fee: "$50",
-    image: "bg-gradient-primary",
-  },
-  {
-    id: 2,
-    name: "HealthFirst Medical Center",
-    address: "456 Oak Ave, Midtown",
-    distance: "3.2 km",
-    rating: 4.6,
-    reviews: 189,
-    specialty: "Pediatrics",
-    availability: "Available Tomorrow",
-    phone: "+1 (555) 234-5678",
-    fee: "$75",
-    image: "bg-gradient-secondary",
-  },
-  {
-    id: 3,
-    name: "Wellness Clinic & Diagnostics",
-    address: "789 Pine Rd, Uptown",
-    distance: "4.1 km",
-    rating: 4.9,
-    reviews: 412,
-    specialty: "Cardiology",
-    availability: "Available Today",
-    phone: "+1 (555) 345-6789",
-    fee: "$100",
-    image: "bg-gradient-hero",
-  },
-  {
-    id: 4,
-    name: "Family Health Associates",
-    address: "321 Elm St, Westside",
-    distance: "5.0 km",
-    rating: 4.7,
-    reviews: 298,
-    specialty: "General Practice",
-    availability: "Available Today",
-    phone: "+1 (555) 456-7890",
-    fee: "$60",
-    image: "bg-gradient-primary",
-  },
-];
+type Clinic = { clinic_id: number; name: string; address?: string; rating?: number; contact?: string; consultation_fee?: number };
 
 const FindClinics = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("all");
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await api.listClinics({ q: searchQuery || undefined });
+        setClinics(data);
+      } catch (err: any) {
+        setError(err.message || "Failed to load clinics");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="min-h-full bg-muted/20">
@@ -184,16 +151,16 @@ const FindClinics = () => {
                 <MapPin className="h-12 w-12 mx-auto mb-2 text-primary" />
                 <p className="text-muted-foreground">Interactive Map View</p>
                 <p className="text-sm text-muted-foreground">
-                  {mockClinics.length} clinics found nearby
+                  {clinics.length} clinics found
                 </p>
               </div>
             </div>
 
             {/* Clinic Cards */}
             <div className="space-y-4">
-              {mockClinics.map((clinic, index) => (
+              {clinics.map((clinic, index) => (
                 <div
-                  key={clinic.id}
+                  key={clinic.clinic_id}
                   className="bg-card rounded-xl p-6 shadow-soft border border-border hover-lift group"
                   style={{
                     animation: "fade-in 0.5s ease-out",
@@ -204,7 +171,7 @@ const FindClinics = () => {
                   <div className="flex flex-col md:flex-row gap-4">
                     {/* Clinic Image/Icon */}
                     <div
-                      className={`${clinic.image} rounded-lg w-full md:w-24 h-24 flex-shrink-0 flex items-center justify-center`}
+                      className={`bg-gradient-primary rounded-lg w-full md:w-24 h-24 flex-shrink-0 flex items-center justify-center`}
                     >
                       <MapPin className="h-10 w-10 text-primary-foreground" />
                     </div>
@@ -218,33 +185,29 @@ const FindClinics = () => {
                           </h3>
                           <p className="text-sm text-muted-foreground flex items-center gap-1">
                             <MapPin className="h-4 w-4" />
-                            {clinic.address} • {clinic.distance}
+                            {clinic.address || 'Address not provided'}
                           </p>
                         </div>
                         <Badge
                           variant={
-                            clinic.availability.includes("Today")
+                            (clinic.rating || 0) >= 4.5
                               ? "default"
                               : "secondary"
                           }
                           className="whitespace-nowrap"
                         >
-                          {clinic.availability}
+                          {typeof clinic.rating === 'number' ? `${clinic.rating.toFixed(1)} ★` : 'No rating'}
                         </Badge>
                       </div>
 
                       <div className="flex flex-wrap gap-4 mb-4">
                         <div className="flex items-center gap-1">
                           <Star className="h-4 w-4 fill-accent text-accent" />
-                          <span className="font-semibold">{clinic.rating}</span>
-                          <span className="text-sm text-muted-foreground">
-                            ({clinic.reviews} reviews)
-                          </span>
+                          <span className="font-semibold">{typeof clinic.rating === 'number' ? clinic.rating.toFixed(1) : 'N/A'}</span>
                         </div>
-                        <Badge variant="outline">{clinic.specialty}</Badge>
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Clock className="h-4 w-4" />
-                          <span>Consultation: {clinic.fee}</span>
+                          <span>Consultation: {typeof clinic.consultation_fee === 'number' ? `$${clinic.consultation_fee}` : 'N/A'}</span>
                         </div>
                       </div>
 

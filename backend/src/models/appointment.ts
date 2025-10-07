@@ -2,25 +2,25 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../sequelize';
 
 interface AppointmentAttributes {
-  id: number;
-  patientId: number; // Foreign key to User
-  clinicId: number; // Foreign key to Clinic
-  appointmentDate: Date;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  notes: string;
+  id: number; // maps to appointment_id
+  userId: number; // maps to user_id
+  clinicId: number; // maps to clinic_id
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm:ss
+  status: 'pending' | 'confirmed' | 'cancelled';
   createdAt?: Date;
   updatedAt?: Date;
 }
 
-interface AppointmentCreationAttributes extends Optional<AppointmentAttributes, 'id'> {}
+interface AppointmentCreationAttributes extends Optional<AppointmentAttributes, 'id' | 'status'> {}
 
 class Appointment extends Model<AppointmentAttributes, AppointmentCreationAttributes> implements AppointmentAttributes {
   public id!: number;
-  public patientId!: number;
+  public userId!: number;
   public clinicId!: number;
-  public appointmentDate!: Date;
-  public status!: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  public notes!: string;
+  public date!: string;
+  public time!: string;
+  public status!: 'pending' | 'confirmed' | 'cancelled';
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -29,38 +29,35 @@ class Appointment extends Model<AppointmentAttributes, AppointmentCreationAttrib
 Appointment.init(
   {
     id: {
-      type: DataTypes.INTEGER.UNSIGNED,
+      field: 'appointment_id',
+      type: DataTypes.INTEGER,
       autoIncrement: true,
       primaryKey: true,
     },
-    patientId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: false,
-      references: {
-        model: 'users',
-        key: 'id',
-      },
+    userId: {
+      field: 'user_id',
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'users', key: 'user_id' },
     },
     clinicId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: false,
-      references: {
-        model: 'clinics',
-        key: 'id',
-      },
+      field: 'clinic_id',
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'clinics', key: 'clinic_id' },
     },
-    appointmentDate: {
-      type: DataTypes.DATE,
+    date: {
+      type: DataTypes.DATEONLY,
+      allowNull: false,
+    },
+    time: {
+      type: DataTypes.TIME,
       allowNull: false,
     },
     status: {
-      type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'completed'),
-      allowNull: false,
-      defaultValue: 'pending',
-    },
-    notes: {
-      type: new DataTypes.TEXT,
+      type: DataTypes.ENUM('pending', 'confirmed', 'cancelled'),
       allowNull: true,
+      defaultValue: 'pending',
     },
   },
   {
