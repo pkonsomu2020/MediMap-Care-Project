@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { Sequelize } from 'sequelize';
 
@@ -12,24 +13,53 @@ const app = express();
 // Middleware
 app.use(helmet());
 app.use(cors());
+app.use(morgan('combined'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Database connection
-const sequelize = new Sequelize(process.env.DATABASE_URL || 'postgresql://localhost:5432/medimap', {
-  dialect: 'postgres',
-  logging: false,
-});
+import sequelize from './sequelize';
+import './models/user'; // Import models to register them
+import './models/clinic';
+import './models/appointment';
+import './models/review';
+
+// Import models for associations
+import User from './models/user';
+import Clinic from './models/clinic';
+import Appointment from './models/appointment';
+import Review from './models/review';
+
+// Define associations
+User.hasMany(Clinic, { foreignKey: 'userId', as: 'clinics' });
+Clinic.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+User.hasMany(Appointment, { foreignKey: 'patientId', as: 'appointments' });
+Appointment.belongsTo(User, { foreignKey: 'patientId', as: 'patient' });
+
+Clinic.hasMany(Appointment, { foreignKey: 'clinicId', as: 'appointments' });
+Appointment.belongsTo(Clinic, { foreignKey: 'clinicId', as: 'clinic' });
+
+User.hasMany(Review, { foreignKey: 'patientId', as: 'reviews' });
+Review.belongsTo(User, { foreignKey: 'patientId', as: 'patient' });
+
+Clinic.hasMany(Review, { foreignKey: 'clinicId', as: 'reviews' });
+Review.belongsTo(Clinic, { foreignKey: 'clinicId', as: 'clinic' });
 
 // Test database connection
 sequelize.authenticate()
   .then(() => console.log('Database connected'))
   .catch(err => console.error('Database connection error:', err));
 
+// Sync database
+sequelize.sync({ alter: true })
+  .then(() => console.log('Database synced'))
+  .catch(err => console.error('Database sync error:', err));
+
 // Routes
-app.get('/', (req, res) => {
-  res.json({ message: 'MediMap Care API' });
-});
+import indexRouter from './routes/index';
+
+app.use('/api', indexRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
