@@ -61,11 +61,10 @@ export const api = {
   },
 
   // Appointments
-  listAppointments(userId: number) {
-    const usp = new URLSearchParams({ userId: String(userId) });
-    return request<any[]>(`/appointments?${usp.toString()}`);
+  listAppointments() {
+    return request<any[]>(`/appointments`);
   },
-  createAppointment(payload: { user_id: number; clinic_id: number; date: string; time: string; status?: 'pending' | 'confirmed' | 'cancelled' }) {
+  createAppointment(payload: { clinic_id: number; date: string; time: string; status?: 'pending' | 'confirmed' | 'cancelled' }) {
     return request<any>(`/appointments`, { method: 'POST', body: JSON.stringify(payload) });
   },
   updateAppointment(id: number, changes: Partial<{ status: 'pending' | 'confirmed' | 'cancelled'; date: string; time: string }>) {
@@ -79,7 +78,7 @@ export const api = {
   listReviewsByClinic(clinicId: number) {
     return request<any[]>(`/reviews/clinic/${clinicId}`);
   },
-  createReview(payload: { user_id: number; clinic_id: number; rating: number; comment?: string }) {
+  createReview(payload: { clinic_id: number; rating: number; comment?: string }) {
     return request<any>(`/reviews`, { method: 'POST', body: JSON.stringify(payload) });
   },
 };

@@ -7,5 +7,3 @@ router.get('/ready', (_req, res) => res.json({ status: 'ready' }));
 router.get('/live', (_req, res) => res.json({ status: 'live' }));
 
 export default router;
-
-
