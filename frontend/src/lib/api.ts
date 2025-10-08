@@ -47,6 +47,9 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
+  getCurrentUser() {
+    return request<any>(`/users/me`);
+  },
 
   // Clinics
   listClinics(params?: { q?: string; min_rating?: number }) {
@@ -89,5 +92,3 @@ export function setAuthToken(token: string | null) {
     else localStorage.removeItem('token');
   } catch {}
 }
-
-
