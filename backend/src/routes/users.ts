@@ -1,7 +1,8 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { createUserDb, findUserByEmail } from '../lib/data';
+import { createUserDb, findUserByEmail, findUserById } from '../lib/data';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -46,6 +47,20 @@ router.post('/login', async (req: Request, res: Response): Promise<Response> => 
       expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     } as jwt.SignOptions);
     return res.json({ token, user: { user_id: (user as any).user_id, name: (user as any).name, email: user.email, phone: (user as any).phone, role: user.role } });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get current user profile
+router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
+  try {
+    const userId = req.auth!.userId;
+    const user = await findUserById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    return res.json(user);
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error' });
   }

@@ -1,43 +1,95 @@
-import { Star, ThumbsUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Star, ThumbsUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { api } from "@/lib/api";
 
-const mockReviews = [
-  {
-    id: 1,
-    clinic: "City Care Clinic",
-    author: "John Doe",
-    rating: 5,
-    date: "2025-09-28",
-    comment:
-      "Excellent service! The staff was very professional and the doctor took time to explain everything thoroughly.",
-    helpful: 12,
-  },
-  {
-    id: 2,
-    clinic: "HealthFirst Medical",
-    author: "Jane Smith",
-    rating: 4,
-    date: "2025-09-25",
-    comment:
-      "Great facility with modern equipment. Wait time was a bit long but overall good experience.",
-    helpful: 8,
-  },
-  {
-    id: 3,
-    clinic: "Wellness Clinic",
-    author: "Mike Johnson",
-    rating: 5,
-    date: "2025-09-20",
-    comment:
-      "Dr. Brown was amazing with my kids. Very patient and caring. Highly recommend!",
-    helpful: 15,
-  },
-];
+type Review = {
+  review_id: number;
+  user_id: number;
+  clinic_id: number;
+  rating: number;
+  comment?: string;
+  created_at: string;
+};
+
+type Clinic = {
+  clinic_id: number;
+  name: string;
+};
 
 const Reviews = () => {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedClinicId, setSelectedClinicId] = useState<number | null>(null);
+  const [newReview, setNewReview] = useState({
+    clinic_id: "",
+    rating: 0,
+    comment: "",
+  });
+
+  useEffect(() => {
+    const loadClinics = async () => {
+      try {
+        const data = await api.listClinics();
+        setClinics(data);
+        if (data.length > 0) {
+          setSelectedClinicId(data[0].clinic_id);
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Failed to load clinics";
+        setError(errorMessage);
+      }
+    };
+    loadClinics();
+  }, []);
+
+  useEffect(() => {
+    if (selectedClinicId) {
+      loadReviews(selectedClinicId);
+    }
+  }, [selectedClinicId]);
+
+  const loadReviews = async (clinicId: number) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await api.listReviewsByClinic(clinicId);
+      setReviews(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load reviews";
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newReview.clinic_id || newReview.rating === 0) return;
+
+    try {
+      await api.createReview({
+        clinic_id: parseInt(newReview.clinic_id),
+        rating: newReview.rating,
+        comment: newReview.comment || undefined,
+      });
+      setNewReview({ clinic_id: "", rating: 0, comment: "" });
+      // Reload reviews for the selected clinic
+      if (selectedClinicId) {
+        loadReviews(selectedClinicId);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to submit review";
+      setError(errorMessage);
+    }
+  };
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }).map((_, i) => (
       <Star
@@ -49,6 +101,11 @@ const Reviews = () => {
         }`}
       />
     ));
+  };
+
+  const getClinicName = (clinicId: number) => {
+    const clinic = clinics.find(c => c.clinic_id === clinicId);
+    return clinic?.name || `Clinic #${clinicId}`;
   };
 
   return (
@@ -70,7 +127,23 @@ const Reviews = () => {
           <div className="lg:col-span-1">
             <div className="bg-card rounded-xl p-6 shadow-soft border border-border sticky top-24">
               <h2 className="text-xl font-semibold mb-4">Write a Review</h2>
-              <form className="space-y-4">
+              <form onSubmit={handleSubmitReview} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Clinic</Label>
+                  <Select value={newReview.clinic_id} onValueChange={(value) => setNewReview(prev => ({ ...prev, clinic_id: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a clinic" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {clinics.map((clinic) => (
+                        <SelectItem key={clinic.clinic_id} value={clinic.clinic_id.toString()}>
+                          {clinic.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="space-y-2">
                   <Label>Rating</Label>
                   <div className="flex gap-1">
@@ -78,9 +151,10 @@ const Reviews = () => {
                       <button
                         key={i}
                         type="button"
+                        onClick={() => setNewReview(prev => ({ ...prev, rating: i + 1 }))}
                         className="hover:scale-110 transition-transform"
                       >
-                        <Star className="h-6 w-6 fill-muted text-muted-foreground hover:fill-accent hover:text-accent" />
+                        <Star className={`h-6 w-6 ${i < newReview.rating ? "fill-accent text-accent" : "fill-muted text-muted-foreground"}`} />
                       </button>
                     ))}
                   </div>
@@ -92,10 +166,12 @@ const Reviews = () => {
                     id="review"
                     placeholder="Share your experience with the clinic..."
                     rows={5}
+                    value={newReview.comment}
+                    onChange={(e) => setNewReview(prev => ({ ...prev, comment: e.target.value }))}
                   />
                 </div>
 
-                <Button variant="hero" className="w-full">
+                <Button variant="hero" className="w-full" type="submit">
                   Submit Review
                 </Button>
               </form>
@@ -104,55 +180,98 @@ const Reviews = () => {
 
           {/* Reviews List */}
           <div className="lg:col-span-2 space-y-4">
-            {mockReviews.map((review, index) => (
-              <div
-                key={review.id}
-                className="bg-card rounded-xl p-6 shadow-soft border border-border"
-                style={{
-                  animation: "fade-in 0.5s ease-out",
-                  animationDelay: `${index * 0.1}s`,
-                  animationFillMode: "both",
-                }}
-              >
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-12 w-12">
-                    <AvatarFallback className="bg-gradient-primary text-primary-foreground font-semibold">
-                      {review.author
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
+            {/* Clinic Selector */}
+            <div className="bg-card rounded-xl p-6 shadow-soft border border-border">
+              <Label className="text-base font-semibold">Select Clinic to View Reviews</Label>
+              <Select value={selectedClinicId?.toString()} onValueChange={(value) => setSelectedClinicId(parseInt(value))}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue placeholder="Select a clinic" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clinics.map((clinic) => (
+                    <SelectItem key={clinic.clinic_id} value={clinic.clinic_id.toString()}>
+                      {clinic.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-semibold">{review.author}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {review.clinic}
-                        </p>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {review.date}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1 mb-3">
-                      {renderStars(review.rating)}
-                    </div>
-
-                    <p className="text-foreground mb-4">{review.comment}</p>
-
-                    <div className="flex items-center gap-4">
-                      <Button variant="ghost" size="sm">
-                        <ThumbsUp className="h-4 w-4 mr-2" />
-                        Helpful ({review.helpful})
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+            {/* Loading State */}
+            {loading && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin mr-4" />
+                <span>Loading reviews...</span>
               </div>
-            ))}
+            )}
+
+            {/* Error State */}
+            {error && (
+              <div className="text-center py-12">
+                <p className="text-destructive mb-4">{error}</p>
+                <Button onClick={() => selectedClinicId && loadReviews(selectedClinicId)}>
+                  Try Again
+                </Button>
+              </div>
+            )}
+
+            {/* Reviews */}
+            {!loading && !error && (
+              <>
+                {reviews.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">No reviews yet for this clinic</p>
+                ) : (
+                  reviews.map((review, index) => (
+                    <div
+                      key={review.review_id}
+                      className="bg-card rounded-xl p-6 shadow-soft border border-border"
+                      style={{
+                        animation: "fade-in 0.5s ease-out",
+                        animationDelay: `${index * 0.1}s`,
+                        animationFillMode: "both",
+                      }}
+                    >
+                      <div className="flex items-start gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="bg-gradient-primary text-primary-foreground font-semibold">
+                            U{review.user_id}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h3 className="font-semibold">User #{review.user_id}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {getClinicName(review.clinic_id)}
+                              </p>
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {new Date(review.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1 mb-3">
+                            {renderStars(review.rating)}
+                          </div>
+
+                          {review.comment && (
+                            <p className="text-foreground mb-4">{review.comment}</p>
+                          )}
+
+                          <div className="flex items-center gap-4">
+                            <Button variant="ghost" size="sm">
+                              <ThumbsUp className="h-4 w-4 mr-2" />
+                              Helpful
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
