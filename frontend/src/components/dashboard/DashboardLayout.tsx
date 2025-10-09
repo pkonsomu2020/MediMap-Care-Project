@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, Link, useLocation, NavLink } from "react-router-dom";
 import {
   MapPin,
@@ -13,9 +13,20 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { api } from "@/lib/api";
+
+type User = {
+  user_id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+};
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
   const location = useLocation();
 
   const navItems = [
@@ -31,6 +42,36 @@ const DashboardLayout = () => {
   ];
 
   const isActive = (path: string) => location.pathname === path;
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = await api.getCurrentUser();
+        setUser(userData);
+      } catch (error) {
+        console.error('Failed to load user:', error);
+      } finally {
+        setUserLoading(false);
+      }
+    };
+
+    loadUser();
+  }, []);
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  const handleSignOut = () => {
+    // Clear token and redirect to login
+    localStorage.removeItem('token');
+    window.location.href = '/login';
+  };
 
   return (
     <div className="min-h-screen bg-background flex w-full">
@@ -56,9 +97,9 @@ const DashboardLayout = () => {
           {/* Logo */}
           <div className="flex items-center justify-between p-6 border-b border-sidebar-border">
             <Link to="/" className="flex items-center space-x-3 group">
-              <img 
-                src="/logo.svg" 
-                alt="MediMap Care Logo" 
+              <img
+                src="/logo.svg"
+                alt="MediMap Care Logo"
                 className="h-7 w-7 group-hover:scale-110 transition-transform duration-300"
               />
               <span className="font-bold text-gradient">MediMap Care</span>
@@ -121,18 +162,18 @@ const DashboardLayout = () => {
                 <Bell className="h-5 w-5" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
               </Button>
-              
+
               <div className="flex items-center gap-3">
-                <Avatar className="h-9 w-9 cursor-pointer">
-                  <AvatarFallback className="bg-gradient-primary text-primary-foreground font-semibold text-sm">
-                    JD
-                  </AvatarFallback>
-                </Avatar>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/login" className="flex items-center gap-2">
-                    <LogOut className="h-4 w-4" />
-                    <span className="hidden sm:inline">Sign Out</span>
-                  </Link>
+                <Link to="/dashboard/profile">
+                  <Avatar className="h-9 w-9 cursor-pointer hover:ring-2 hover:ring-primary/20 transition-all">
+                    <AvatarFallback className="bg-gradient-primary text-primary-foreground font-semibold text-sm">
+                      {userLoading ? ".." : user ? getInitials(user.name) : "??"}
+                    </AvatarFallback>
+                  </Avatar>
+                </Link>
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4" />
+                  <span className="hidden sm:inline ml-2">Sign Out</span>
                 </Button>
               </div>
             </div>
