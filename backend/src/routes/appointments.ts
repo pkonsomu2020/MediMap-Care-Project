@@ -68,12 +68,18 @@ router.put('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
     }
 
     const allowed: any = {};
-    if (req.body.status) allowed.status = req.body.status;
+    if (req.body.status) {
+      console.log('Updating status to:', req.body.status);
+      allowed.status = req.body.status;
+    }
     if (req.body.date) allowed.date = req.body.date;
     if (req.body.time) allowed.time = req.body.time;
+    console.log('Updating appointment', appointmentId, 'with changes:', allowed);
     const updated = await updateAppointmentDb(appointmentId, allowed);
+    console.log('Update result:', updated);
     return res.json(updated);
   } catch (error) {
+    console.error('Error updating appointment:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Search, MapPin, Star, Clock, Phone, Navigation } from "lucide-react";
+import { Search, MapPin, Star, Clock, Phone, Navigation, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
-type Clinic = { clinic_id: number; name: string; address?: string; rating?: number; contact?: string; consultation_fee?: number };
+type Clinic = {
+  clinic_id: number;
+  name: string;
+  address?: string;
+  rating?: number;
+  contact?: string;
+  consultation_fee?: number;
+};
 
 const FindClinics = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,15 +42,30 @@ const FindClinics = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Booking dialog state
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
+  const [bookingDate, setBookingDate] = useState<Date>();
+  const [bookingTime, setBookingTime] = useState<string>("");
+  const [bookingLoading, setBookingLoading] = useState(false);
+
+  // Details dialog state
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsClinic, setDetailsClinic] = useState<Clinic | null>(null);
+
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
   useEffect(() => {
-    const load = async () => {
+  const load = async () => {
       try {
         setLoading(true);
         setError(null);
         const data = await api.listClinics({ q: searchQuery || undefined });
         setClinics(data);
-      } catch (err: any) {
-        setError(err.message || "Failed to load clinics");
+      } catch (err: unknown) {
+        const error = err as Error;
+        setError(error.message || "Failed to load clinics");
       } finally {
         setLoading(false);
       }
@@ -37,6 +73,80 @@ const FindClinics = () => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleBookAppointment = (clinic: Clinic) => {
+    setSelectedClinic(clinic);
+    setBookingDate(undefined);
+    setBookingTime("");
+    setBookingDialogOpen(true);
+  };
+
+  const handleViewDetails = (clinic: Clinic) => {
+    setDetailsClinic(clinic);
+    setDetailsDialogOpen(true);
+  };
+
+  const handleCall = (clinic: Clinic) => {
+    if (clinic.contact) {
+      window.location.href = `tel:${clinic.contact}`;
+    } else {
+      toast({
+        title: "Contact not available",
+        description: "This clinic doesn't have a phone number listed.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBookingSubmit = async () => {
+    if (!selectedClinic || !bookingDate || !bookingTime) {
+      toast({
+        title: "Missing information",
+        description: "Please select a date and time for your appointment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setBookingLoading(true);
+      const appointmentData = {
+        clinic_id: selectedClinic.clinic_id,
+        date: format(bookingDate, "yyyy-MM-dd"),
+        time: bookingTime,
+        status: "pending" as const,
+      };
+
+      await api.createAppointment(appointmentData);
+
+      toast({
+        title: "Appointment booked!",
+        description: `Your appointment at ${selectedClinic.name} has been scheduled.`,
+      });
+
+      setBookingDialogOpen(false);
+      setSelectedClinic(null);
+      setBookingDate(undefined);
+      setBookingTime("");
+
+      // Optionally navigate to appointments page
+      // navigate("/dashboard/appointments");
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast({
+        title: "Booking failed",
+        description: err.message || "Failed to book appointment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const timeSlots = [
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"
+  ];
 
   return (
     <div className="min-h-full bg-muted/20">
@@ -212,13 +322,25 @@ const FindClinics = () => {
                       </div>
 
                       <div className="flex flex-wrap gap-2">
-                        <Button variant="hero" size="sm">
+                        <Button
+                          variant="hero"
+                          size="sm"
+                          onClick={() => handleBookAppointment(clinic)}
+                        >
                           Book Appointment
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleViewDetails(clinic)}
+                        >
                           View Details
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCall(clinic)}
+                        >
                           <Phone className="h-4 w-4 mr-2" />
                           Call
                         </Button>
@@ -231,6 +353,145 @@ const FindClinics = () => {
           </div>
         </div>
       </div>
+
+      {/* Booking Dialog */}
+      <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Book Appointment</DialogTitle>
+            <DialogDescription>
+              Schedule an appointment at {selectedClinic?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Select Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !bookingDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {bookingDate ? format(bookingDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={bookingDate}
+                    onSelect={setBookingDate}
+                    disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Select Time</label>
+              <Select value={bookingTime} onValueChange={setBookingTime}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a time slot" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeSlots.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setBookingDialogOpen(false)}
+              disabled={bookingLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBookingSubmit}
+              disabled={bookingLoading || !bookingDate || !bookingTime}
+            >
+              {bookingLoading ? "Booking..." : "Book Appointment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{detailsClinic?.name}</DialogTitle>
+            <DialogDescription>
+              Clinic details and information
+            </DialogDescription>
+          </DialogHeader>
+
+          {detailsClinic && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Address</label>
+                <p className="text-sm text-muted-foreground">
+                  {detailsClinic.address || 'Address not provided'}
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Contact</label>
+                <p className="text-sm text-muted-foreground">
+                  {detailsClinic.contact || 'Contact information not available'}
+                </p>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Rating</label>
+                <div className="flex items-center gap-2">
+                  <Star className="h-4 w-4 fill-accent text-accent" />
+                  <span className="font-semibold">
+                    {typeof detailsClinic.rating === 'number' ? detailsClinic.rating.toFixed(1) : 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Consultation Fee</label>
+                <p className="text-sm text-muted-foreground">
+                  {typeof detailsClinic.consultation_fee === 'number' ? `$${detailsClinic.consultation_fee}` : 'Not specified'}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDetailsDialogOpen(false)}
+            >
+              Close
+            </Button>
+            {detailsClinic && (
+              <Button
+                onClick={() => {
+                  setDetailsDialogOpen(false);
+                  handleBookAppointment(detailsClinic);
+                }}
+              >
+                Book Appointment
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

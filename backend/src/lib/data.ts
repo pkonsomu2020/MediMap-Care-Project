@@ -88,7 +88,15 @@ export async function deleteClinicDb(id: number) {
 // APPOINTMENTS
 export async function listAppointmentsByUserDb(userId: number) {
   const { data, error } = await serviceClient!.from('appointments')
-    .select('appointment_id, user_id, clinic_id, date, time, status')
+    .select(`
+      appointment_id,
+      user_id,
+      clinic_id,
+      date,
+      time,
+      status,
+      clinics!inner(clinic_id, name, address, contact)
+    `)
     .eq('user_id', userId)
     .order('date')
     .order('time');
@@ -105,7 +113,7 @@ export async function getAppointmentDb(id: number) {
   return data || null;
 }
 
-export async function createAppointmentDb(payload: { user_id: number; clinic_id: number; date: string; time: string; status?: 'pending'|'confirmed'|'cancelled' }) {
+export async function createAppointmentDb(payload: { user_id: number; clinic_id: number; date: string; time: string; status?: 'pending'|'confirmed'|'cancelled'|'completed' }) {
   const { data, error } = await serviceClient!.from('appointments')
     .insert(payload)
     .select('appointment_id, user_id, clinic_id, date, time, status')
@@ -114,7 +122,7 @@ export async function createAppointmentDb(payload: { user_id: number; clinic_id:
   return data;
 }
 
-export async function updateAppointmentDb(id: number, changes: Partial<{ status: 'pending'|'confirmed'|'cancelled'; date: string; time: string }>) {
+export async function updateAppointmentDb(id: number, changes: Partial<{ status: 'pending'|'confirmed'|'cancelled'|'completed'; date: string; time: string }>) {
   const { data, error } = await serviceClient!.from('appointments')
     .update(changes)
     .eq('appointment_id', id)

@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Clock, MapPin, Phone, Video, X, Check, Loader2 } from "lucide-react";
+import { Calendar, Clock, MapPin, Phone, Video, X, Check, Loader2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
+import { toast } from "@/hooks/use-toast";
 
 type Appointment = {
   appointment_id: number;
@@ -13,12 +17,20 @@ type Appointment = {
   date: string;
   time: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  clinics: {
+    clinic_id: number;
+    name: string;
+    address?: string;
+    contact?: string;
+  };
 };
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rescheduleDialog, setRescheduleDialog] = useState<{ open: boolean; appointment: Appointment | null }>({ open: false, appointment: null });
+  const [rescheduleData, setRescheduleData] = useState({ date: '', time: '' });
 
   useEffect(() => {
     const loadAppointments = async () => {
@@ -40,6 +52,97 @@ const Appointments = () => {
     };
     loadAppointments();
   }, []);
+
+  const handleCancelAppointment = async (appointmentId: number) => {
+    try {
+      await api.updateAppointment(appointmentId, { status: 'cancelled' });
+      // Update local state
+      setAppointments(prev =>
+        prev.map(apt =>
+          apt.appointment_id === appointmentId
+            ? { ...apt, status: 'cancelled' as const }
+            : apt
+        )
+      );
+      toast({
+        title: "Appointment cancelled",
+        description: "Your appointment has been cancelled successfully.",
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to cancel appointment";
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCompleteAppointment = async (appointmentId: number) => {
+    try {
+      await api.updateAppointment(appointmentId, { status: 'completed' });
+      // Update local state
+      setAppointments(prev =>
+        prev.map(apt =>
+          apt.appointment_id === appointmentId
+            ? { ...apt, status: 'completed' as const }
+            : apt
+        )
+      );
+      toast({
+        title: "Appointment completed",
+        description: "Your appointment has been marked as completed.",
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to complete appointment";
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRescheduleAppointment = async () => {
+    if (!rescheduleDialog.appointment || !rescheduleData.date || !rescheduleData.time) return;
+
+    try {
+      await api.updateAppointment(rescheduleDialog.appointment.appointment_id, {
+        date: rescheduleData.date,
+        time: rescheduleData.time
+      });
+      // Update local state
+      setAppointments(prev =>
+        prev.map(apt =>
+          apt.appointment_id === rescheduleDialog.appointment!.appointment_id
+            ? { ...apt, date: rescheduleData.date, time: rescheduleData.time }
+            : apt
+        )
+      );
+      setRescheduleDialog({ open: false, appointment: null });
+      setRescheduleData({ date: '', time: '' });
+      toast({
+        title: "Appointment rescheduled",
+        description: "Your appointment has been rescheduled successfully.",
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to reschedule appointment";
+      setError(errorMessage);
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openRescheduleDialog = (appointment: Appointment) => {
+    setRescheduleDialog({ open: true, appointment });
+    setRescheduleData({ date: appointment.date, time: appointment.time });
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "confirmed":
@@ -66,7 +169,7 @@ const Appointments = () => {
           <div className="flex items-start justify-between mb-3">
             <div>
               <h3 className="text-lg font-semibold mb-1">
-                Clinic #{appointment.clinic_id}
+                {appointment.clinics.name}
               </h3>
               <p className="text-sm text-muted-foreground">
                 Appointment #{appointment.appointment_id}
@@ -85,18 +188,36 @@ const Appointments = () => {
               <Clock className="h-4 w-4 text-primary" />
               <span>{appointment.time}</span>
             </div>
+            <div className="flex items-center gap-2 text-sm col-span-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              <span>{appointment.clinics.address || 'Address not available'}</span>
+            </div>
           </div>
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
-            {appointment.status === "confirmed" && (
+            {(appointment.status === "confirmed" || appointment.status === "pending") && (
               <>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => openRescheduleDialog(appointment)}>
+                  <Edit className="h-4 w-4 mr-2" />
                   Reschedule
                 </Button>
-                <Button variant="ghost" size="sm" className="text-destructive">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive"
+                  onClick={() => handleCancelAppointment(appointment.appointment_id)}
+                >
                   <X className="h-4 w-4 mr-2" />
                   Cancel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleCompleteAppointment(appointment.appointment_id)}
+                >
+                  <Check className="h-4 w-4 mr-2" />
+                  Mark Complete
                 </Button>
               </>
             )}
@@ -156,10 +277,12 @@ const Appointments = () => {
                 Manage your healthcare appointments
               </p>
             </div>
-            <Button variant="hero">
-              <Calendar className="h-4 w-4 mr-2" />
-              Book New Appointment
-            </Button>
+            <Link to="/dashboard/find-clinics">
+              <Button variant="hero">
+                <Calendar className="h-4 w-4 mr-2" />
+                Book New Appointment
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -210,6 +333,52 @@ const Appointments = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Reschedule Dialog */}
+      <Dialog open={rescheduleDialog.open} onOpenChange={(open) => setRescheduleDialog({ open, appointment: null })}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Reschedule Appointment</DialogTitle>
+            <DialogDescription>
+              Update the date and time for your appointment with {rescheduleDialog.appointment?.clinics.name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="date" className="text-right">
+                Date
+              </Label>
+              <Input
+                id="date"
+                type="date"
+                value={rescheduleData.date}
+                onChange={(e) => setRescheduleData(prev => ({ ...prev, date: e.target.value }))}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="time" className="text-right">
+                Time
+              </Label>
+              <Input
+                id="time"
+                type="time"
+                value={rescheduleData.time}
+                onChange={(e) => setRescheduleData(prev => ({ ...prev, time: e.target.value }))}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleDialog({ open: false, appointment: null })}>
+              Cancel
+            </Button>
+            <Button onClick={handleRescheduleAppointment}>
+              Reschedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
