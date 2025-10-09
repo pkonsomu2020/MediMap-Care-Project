@@ -67,10 +67,10 @@ export const api = {
   listAppointments() {
     return request<any[]>(`/appointments`);
   },
-  createAppointment(payload: { clinic_id: number; date: string; time: string; status?: 'pending' | 'confirmed' | 'cancelled' }) {
+  createAppointment(payload: { clinic_id: number; date: string; time: string; status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' }) {
     return request<any>(`/appointments`, { method: 'POST', body: JSON.stringify(payload) });
   },
-  updateAppointment(id: number, changes: Partial<{ status: 'pending' | 'confirmed' | 'cancelled'; date: string; time: string }>) {
+  updateAppointment(id: number, changes: Partial<{ status: 'pending' | 'confirmed' | 'cancelled' | 'completed'; date: string; time: string }>) {
     return request<any>(`/appointments/${id}`, { method: 'PUT', body: JSON.stringify(changes) });
   },
   deleteAppointment(id: number) {
