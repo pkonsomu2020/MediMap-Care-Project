@@ -82,6 +82,41 @@ export const api = {
   createReview(payload: { user_id: number; clinic_id: number; rating: number; comment?: string }) {
     return request<any>(`/reviews`, { method: 'POST', body: JSON.stringify(payload) });
   },
+
+  // Places (Google Places API integration)
+  searchNearbyPlaces(params: { lat: number; lng: number; radius?: number; type?: string }) {
+    const usp = new URLSearchParams();
+    usp.set('lat', String(params.lat));
+    usp.set('lng', String(params.lng));
+    if (params.radius) usp.set('radius', String(params.radius));
+    if (params.type) usp.set('type', params.type);
+    return request<any>(`/places/nearby?${usp.toString()}`);
+  },
+  getCachedPlaces(params: { lat: number; lng: number; radius?: number }) {
+    const usp = new URLSearchParams();
+    usp.set('lat', String(params.lat));
+    usp.set('lng', String(params.lng));
+    if (params.radius) usp.set('radius', String(params.radius));
+    return request<any>(`/places/cached?${usp.toString()}`);
+  },
+  getPlaceDetails(placeId: string) {
+    return request<any>(`/places/details/${placeId}`);
+  },
+  geocodeAddress(address: string) {
+    return request<{ lat: number; lng: number }>(`/places/geocode`, {
+      method: 'POST',
+      body: JSON.stringify({ address }),
+    });
+  },
+
+  getDirections(payload: { origin: { lat: number; lng: number }; destination: { lat: number; lng: number } }) {
+    return request<{ distance: string; duration: string; polyline: string }>(`/directions`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
+  },
 };
 
 export function setAuthToken(token: string | null) {
