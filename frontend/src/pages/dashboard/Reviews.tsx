@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Star, ThumbsUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -22,13 +23,15 @@ type Clinic = {
 };
 
 const Reviews = () => {
+  const [searchParams] = useSearchParams();
+  const clinicIdParam = searchParams.get("clinicId");
   const [reviews, setReviews] = useState<Review[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedClinicId, setSelectedClinicId] = useState<number | null>(null);
+  const [selectedClinicId, setSelectedClinicId] = useState<number | null>(clinicIdParam ? parseInt(clinicIdParam) : null);
   const [newReview, setNewReview] = useState({
-    clinic_id: "",
+    clinic_id: clinicIdParam || "",
     rating: 0,
     comment: "",
   });
@@ -38,7 +41,7 @@ const Reviews = () => {
       try {
         const data = await api.listClinics();
         setClinics(data);
-        if (data.length > 0) {
+        if (!selectedClinicId && data.length > 0) {
           setSelectedClinicId(data[0].clinic_id);
         }
       } catch (err) {

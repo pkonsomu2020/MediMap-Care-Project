@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Calendar, Clock, MapPin, Phone, Video, X, Check, Loader2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,7 @@ type Appointment = {
 };
 
 const Appointments = () => {
+  const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -222,7 +223,7 @@ const Appointments = () => {
               </>
             )}
             {appointment.status === "completed" && (
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => navigate(`/dashboard/reviews?clinicId=${appointment.clinic_id}`)}>
                 Leave Review
               </Button>
             )}
