@@ -1,48 +1,41 @@
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { Search, MapPin, Star, Phone, Globe, Clock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { api } from "@/lib/api";
 
-const mockClinics = [
-  {
-    id: 1,
-    name: "City Care Clinic",
-    specialty: "General Practice",
-    address: "123 Main St, Downtown",
-    phone: "+1 (555) 123-4567",
-    website: "cityclinic.com",
-    rating: 4.8,
-    reviews: 234,
-    hours: "Mon-Fri: 8AM-6PM",
-    services: ["Primary Care", "Vaccinations", "Health Screenings"],
-  },
-  {
-    id: 2,
-    name: "HealthFirst Medical Center",
-    specialty: "Multi-Specialty",
-    address: "456 Oak Ave, Midtown",
-    phone: "+1 (555) 234-5678",
-    website: "healthfirst.com",
-    rating: 4.6,
-    reviews: 189,
-    hours: "Mon-Sun: 24/7",
-    services: ["Emergency Care", "Surgery", "Diagnostics"],
-  },
-  {
-    id: 3,
-    name: "Wellness Clinic & Diagnostics",
-    specialty: "Cardiology",
-    address: "789 Pine Rd, Uptown",
-    phone: "+1 (555) 345-6789",
-    website: "wellnessclinic.com",
-    rating: 4.9,
-    reviews: 412,
-    hours: "Mon-Sat: 9AM-5PM",
-    services: ["Heart Health", "ECG", "Stress Tests"],
-  },
-];
+type Clinic = {
+  clinic_id: number;
+  name: string;
+  address?: string;
+  rating?: number;
+  contact?: string;
+  services?: string;
+  reviews_count?: number;
+};
 
 const Directory = () => {
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchClinics = async () => {
+      try {
+        setLoading(true);
+        const data = await api.listClinics();
+        setClinics(data);
+      } catch (err: any) {
+        setError(err.message || "Failed to fetch clinics");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchClinics();
+  }, []);
+
   return (
     <div className="min-h-full bg-muted/20">
       {/* Header */}
@@ -72,10 +65,12 @@ const Directory = () => {
         </div>
 
         {/* Directory List */}
+        {loading && <p>Loading clinics...</p>}
+        {error && <p className="text-red-500">{error}</p>}
         <div className="grid gap-6">
-          {mockClinics.map((clinic, index) => (
+          {clinics.map((clinic, index) => (
             <div
-              key={clinic.id}
+              key={clinic.clinic_id}
               className="bg-card rounded-xl p-6 shadow-soft border border-border hover-lift"
               style={{
                 animation: "fade-in 0.5s ease-out",
@@ -99,11 +94,8 @@ const Directory = () => {
                       <Star className="h-4 w-4 fill-accent text-accent" />
                       <span className="font-semibold">{clinic.rating}</span>
                       <span className="text-sm text-muted-foreground">
-                        ({clinic.reviews} reviews)
+                        ({clinic.reviews_count || 0} reviews)
                       </span>
-                      <Badge variant="outline" className="ml-2">
-                        {clinic.specialty}
-                      </Badge>
                     </div>
                   </div>
 
@@ -114,29 +106,16 @@ const Directory = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Phone className="h-4 w-4 text-primary" />
-                      <span>{clinic.phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Globe className="h-4 w-4 text-primary" />
-                      <a
-                        href={`https://${clinic.website}`}
-                        className="text-primary hover:underline"
-                      >
-                        {clinic.website}
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4 text-primary" />
-                      <span>{clinic.hours}</span>
+                      <span>{clinic.contact}</span>
                     </div>
                   </div>
 
                   <div>
                     <p className="text-sm font-medium mb-2">Services:</p>
                     <div className="flex flex-wrap gap-2">
-                      {clinic.services.map((service) => (
+                      {clinic.services?.split(",").map((service) => (
                         <Badge key={service} variant="secondary">
-                          {service}
+                          {service.trim()}
                         </Badge>
                       ))}
                     </div>
@@ -146,9 +125,11 @@ const Directory = () => {
                     <Button variant="hero" size="sm">
                       Book Appointment
                     </Button>
-                    <Button variant="outline" size="sm">
-                      View Profile
-                    </Button>
+                    <Link to={`/dashboard/clinic/${clinic.clinic_id}`}>
+                      <Button variant="outline" size="sm">
+                        View Profile
+                      </Button>
+                    </Link>
                     <Button variant="ghost" size="sm">
                       Get Directions
                     </Button>

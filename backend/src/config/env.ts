@@ -1,5 +1,9 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
 import { z } from 'zod';
+
+// Explicitly load .env from the 'backend' directory
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -10,6 +14,7 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   JWT_SECRET: z.string().optional(),
   JWT_EXPIRES_IN: z.string().optional(),
+  GOOGLE_MAPS_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
