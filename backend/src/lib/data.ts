@@ -15,6 +15,15 @@ export async function findUserByEmail(email: string) {
   return data || null;
 }
 
+export async function findUserById(id: number) {
+  const { data, error } = await serviceClient!.from('users')
+    .select('user_id, name, email, phone, role')
+    .eq('user_id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
 export async function createUserDb(payload: { name: string; email: string; phone?: string | null; password: string; role?: string }) {
   const { data, error } = await serviceClient!.from('users')
     .insert({ name: payload.name, email: payload.email, phone: payload.phone ?? null, password: payload.password, role: payload.role ?? 'user' })
@@ -138,5 +147,3 @@ export async function createReviewDb(payload: { user_id: number; clinic_id: numb
   if (error) throw error;
   return data;
 }
-
-

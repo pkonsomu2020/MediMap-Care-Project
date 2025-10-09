@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { createReviewDb, listReviewsByClinicDb, getClinicDb } from '../lib/data';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
 
@@ -25,11 +26,11 @@ router.get('/clinic/:clinicId', async (req: Request, res: Response): Promise<Res
 });
 
 // Create a new review
-router.post('/', async (req: Request, res: Response): Promise<Response> => {
-  const { user_id, clinic_id, rating, comment } = req.body;
+router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
+  const { clinic_id, rating, comment } = req.body;
 
-  if (!user_id || !clinic_id || !rating) {
-    return res.status(400).json({ error: 'user_id, clinic_id, and rating are required' });
+  if (!clinic_id || !rating) {
+    return res.status(400).json({ error: 'clinic_id and rating are required' });
   }
 
   const clinicIdNumber = parseInt(clinic_id);
@@ -48,7 +49,7 @@ router.post('/', async (req: Request, res: Response): Promise<Response> => {
       return res.status(404).json({ error: 'Clinic not found' });
     }
 
-    const review = await createReviewDb({ user_id, clinic_id: clinicIdNumber, rating, comment });
+    const review = await createReviewDb({ user_id: req.auth!.userId, clinic_id: clinicIdNumber, rating, comment });
 
     return res.status(201).json(review);
   } catch (error) {

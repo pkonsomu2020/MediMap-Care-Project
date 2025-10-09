@@ -2,6 +2,7 @@ import os
 import random
 from datetime import date, time, timedelta, datetime
 from typing import List, Dict
+import bcrypt
 
 from dotenv import load_dotenv
 from supabase import create_client, Client
@@ -27,11 +28,12 @@ def seed_users(supabase: Client, count: int = 10) -> List[int]:
 	for i in range(count):
 		name = f"{random.choice(first_names)} {random.choice(last_names)}"
 		email = f"user{i+1}_{int(datetime.utcnow().timestamp())}@example.com"
+		hashed_password = bcrypt.hashpw("Password123!".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 		users_payload.append(
 			{
 				"name": name,
 				"email": email,
-				"password": "Password123!",  # sample only; hashed in real apps
+				"password": hashed_password,
 				"phone": f"+1-555-01{str(i).zfill(2)}",
 				"role": "user",
 			}
