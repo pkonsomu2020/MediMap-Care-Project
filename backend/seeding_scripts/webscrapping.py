@@ -20,15 +20,12 @@ import requests
 import time
 import os
 from bs4 import BeautifulSoup
-
+import googlemaps
+from dotenv import load_dotenv
+from typing import List, Dict, Any
 # ============================================================
 # --- GLOBAL CONFIGURATION ---
 # ============================================================
-
-# Bearer token for authenticated API access (general endpoint only)
-
-    
-AUTH_TOKEN = "dUQlLFLPWFj6BV8BA9icc07h7ewbJx"
 
 # API endpoint for paginated list of facilities
 GENERAL_LIST_URL = (
@@ -42,18 +39,25 @@ GENERAL_LIST_URL = (
 DETAIL_API_BASE_URL = "https://kmhfl.health.go.ke/public/facilities/"
 
 # HTTP headers for API calls
+AUTH_TOKEN = ""
 HEADERS = {
     "Authorization": f"Bearer {AUTH_TOKEN}",
     "Accept": "application/json"
 }
 
+# Places API
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path=dotenv_path)
+GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
+
 # Output file paths
-GENERAL_OUTPUT_FILE = "all_kmhfl_facilities_general.json"
-DETAIL_OUTPUT_FILE = "all_kmhfl_facilities_details.json"
+relative_path = os.path.dirname(__file__)
+GENERAL_OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "all_kmhfl_facilities_general.json")
+DETAIL_OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "all_kmhfl_facilities_details.json")
 
 # Optional runtime limits (for testing or controlled runs)
 MAX_PAGE_COUNT = 1              # Max number of pages to fetch (None = all)
-MAX_FACILITIES_FOR_DETAIL = None  # Max facilities for Phase 2 (None = all)
+MAX_FACILITIES_FOR_DETAIL = 3  # Max facilities for Phase 2 (None = all)
 
 
 # ============================================================
@@ -104,6 +108,45 @@ def end_stream(file_path: str):
 
 home_page = "https://kmhfl.health.go.ke/public/facilities"
 
+# ============================================================
+# --- Google maps additional info ---
+# ============================================================
+
+FIELDS = ['place_id', 'formatted_address', 'name', 'geometry']
+
+# Initialize the Google Maps client
+gmaps = googlemaps.Client(key=GOOGLE_MAPS_API_KEY)
+
+# --- Functions ---
+
+def google_find_place(place_name: str, detailed: bool= True) -> dict | None:
+    """Uses Text Search to find the Place ID for a given place name."""
+    try:
+        # Use 'Text Search' to find the most relevant place
+        search_result = gmaps.find_place(
+            input=place_name,
+            input_type='textquery',
+            fields=FIELDS
+        )        
+        if search_result.get('candidates'):
+            if not detailed:
+                place_id = search_result['candidates'][0]['place_id']
+                return {"google_place_id": place_id}
+            print(f"✅ Found ID for '{place_name}': {search_result['candidates'][0]['place_id']}")
+            return {
+                "formatted_address": search_result['candidates'][0]["formatted_address"],
+                "google_name": search_result['candidates'][0]["name"],
+                "google_location": search_result['candidates'][0]["geometry"]["location"]
+                }
+        else:
+            print(f"❌ No results found for '{place_name}'.")
+            return None
+    except Exception as e:
+        print(f"An error occurred during search for '{place_name}': {e}")
+        return None
+
+# ============================================================
+
 def extract_general_data(html: str):
     """
     Extracts general data (including token, facility data, etc.) from a Next.js rendered HTML page.
@@ -139,7 +182,7 @@ def extract_token(html: str) -> str:
     except KeyError:
         raise ValueError("Token not found in parsed data structure.")
 
-def extract_facility_details(html: str) -> dict:
+def extract_facility_details(html: str, google_data:bool = True) -> dict:
     """
     Extract detailed facility data from a KMHFL facility webpage.
 
@@ -150,6 +193,7 @@ def extract_facility_details(html: str) -> dict:
 
     Parameters:
         html (str): The full HTML source of the facility page.
+        google_data (bool): Whether to fetch additional data from Google Places API.
 
     Returns:
         dict: Structured data extracted from the embedded JSON.
@@ -202,6 +246,11 @@ def extract_facility_details(html: str) -> dict:
         "date_established": facility_data.get("date_established"),
     }
 
+    # Optionally enrich with Google Places data
+    if google_data and facility_info.get("name"):
+        google_place_data = google_find_place(facility_info["name"])
+        if google_place_data:
+            facility_info.update(google_place_data)
     return facility_info
 
 def write_facilities_to_file(data: dict, filename: str):
@@ -369,6 +418,7 @@ def fetch_all_detail_data():
 
                 # The detail endpoint returns HTML; extract embedded JSON data
                 detail_data = extract_facility_details(response.text)
+                print(detail_data)
 
                 append_stream(DETAIL_OUTPUT_FILE, detail_data, is_first_entry=first_entry)
                 first_entry = False
