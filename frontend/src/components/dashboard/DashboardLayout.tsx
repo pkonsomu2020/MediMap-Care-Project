@@ -10,10 +10,13 @@ import {
   X,
   LogOut,
   Bell,
+  Siren,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { api } from "@/lib/api";
+import { APIProvider } from "@vis.gl/react-google-maps";
+import { config } from "@/config/environment";
 
 type User = {
   user_id: number;
@@ -31,6 +34,7 @@ const DashboardLayout = () => {
 
   const navItems = [
     { name: "Find Clinics", path: "/dashboard/find-clinics", icon: Map },
+    { name: "Emergency", path: "/dashboard/emergency", icon: Siren },
     {
       name: "My Appointments",
       path: "/dashboard/appointments",
@@ -74,7 +78,8 @@ const DashboardLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
+    <APIProvider apiKey={config.googleMapsApiKey} libraries={['geometry','places']}>
+      <div className="min-h-screen bg-background flex w-full">
       {/* Mobile Sidebar Overlay */}
       {isSidebarOpen && (
         <div
@@ -186,6 +191,7 @@ const DashboardLayout = () => {
         </main>
       </div>
     </div>
+  </APIProvider>
   );
 };
 

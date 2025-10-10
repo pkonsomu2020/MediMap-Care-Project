@@ -137,6 +137,81 @@ export const api = {
   createReview(payload: { clinic_id: number; rating: number; comment?: string }) {
     return request<Review>(`/reviews`, { method: 'POST', body: JSON.stringify(payload) });
   },
+
+  // Places (Google Places API integration)
+  // Backend expects: lat, lng, radiusKm, radiusMode, types (comma-separated), ranking, maxResults, skipCache
+  // Backwards compatible: supports legacy { radius, type } and maps them appropriately.
+  searchNearbyPlaces(params: {
+    lat: number;
+    lng: number;
+    radiusKm?: number;
+    radius?: number; // legacy
+    types?: string[];
+    type?: string; // legacy
+    radiusMode?: 'preset' | 'drag';
+    ranking?: 'DISTANCE' | 'POPULARITY';
+    maxResults?: number;
+    skipCache?: boolean;
+  }) {
+    const usp = new URLSearchParams();
+    usp.set('lat', String(params.lat));
+    usp.set('lng', String(params.lng));
+    const radiusKm = params.radiusKm ?? params.radius;
+    if (typeof radiusKm === 'number') usp.set('radiusKm', String(radiusKm));
+    if (params.radiusMode) usp.set('radiusMode', params.radiusMode);
+    const typesCsv = params.types?.join(',') || (params.type ? params.type : '');
+    if (typesCsv) usp.set('types', typesCsv);
+    if (params.ranking) usp.set('ranking', params.ranking);
+    if (typeof params.maxResults === 'number') usp.set('maxResults', String(params.maxResults));
+    if (typeof params.skipCache === 'boolean') usp.set('skipCache', String(params.skipCache));
+    return request<any>(`/places/nearby?${usp.toString()}`);
+  },
+  getCachedPlaces(params: { lat: number; lng: number; radius?: number }) {
+    const usp = new URLSearchParams();
+    usp.set('lat', String(params.lat));
+    usp.set('lng', String(params.lng));
+    if (params.radius) usp.set('radius', String(params.radius));
+    return request<any>(`/places/cached?${usp.toString()}`);
+  },
+  getPlaceDetails(placeId: string) {
+    return request<any>(`/places/details/${placeId}`);
+  },
+  // Forward geocode: returns { lat, lng, formattedAddress?, placeId? }
+  geocodeAddress(address: string) {
+    return request<{ mode: 'forward'; result: { lat: number; lng: number; formattedAddress?: string; placeId?: string } }>(
+      `/places/geocode`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ address }),
+      }
+    ).then((r) => r.result);
+  },
+
+  // Reverse geocode: returns { lat, lng, formattedAddress?, placeId? }
+  geocodeReverse(lat: number, lng: number) {
+    return request<{ mode: 'reverse'; result: { lat: number; lng: number; formattedAddress?: string; placeId?: string } }>(
+      `/places/geocode`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ lat, lng }),
+      }
+    ).then((r) => r.result);
+  },
+
+  // Normalizes backend fields { distanceText, durationText, polyline, legs? } into legacy shape
+  getDirections(payload: { origin: { lat: number; lng: number }; destination: { lat: number; lng: number } }) {
+    return request<{ distanceText: string; durationText: string; polyline: string; legs?: any[] }>(`/directions`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }).then((r) => ({
+      distance: r.distanceText,
+      duration: r.durationText,
+      polyline: r.polyline,
+      legs: r.legs,
+      distanceText: r.distanceText,
+      durationText: r.durationText,
+    }));
+  },
 };
 
 export function setAuthToken(token: string | null) {

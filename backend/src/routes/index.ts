@@ -3,6 +3,7 @@ import usersRouter from './users';
 import clinicsRouter from './clinics';
 import appointmentsRouter from './appointments';
 import reviewsRouter from './reviews';
+import placesRouter from './places';
 import healthRouter from '../health/health.routes';
 
 const router = Router();
@@ -16,6 +17,7 @@ router.use('/users', usersRouter);
 router.use('/clinics', clinicsRouter);
 router.use('/appointments', appointmentsRouter);
 router.use('/reviews', reviewsRouter);
+router.use('/places', placesRouter);
 
 export default router;
 
