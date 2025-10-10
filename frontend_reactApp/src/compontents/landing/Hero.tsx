@@ -133,17 +133,18 @@ const StatItem = ({
 /* --- Styles --- */
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flex: 0,
     backgroundColor: "#F9FAFB",
   },
   content: {
     padding: 20,
+    paddingTop: 20,
   },
   backgroundGradient: {
     ...StyleSheet.absoluteFillObject,
   },
   textSection: {
-    marginTop: 50,
+    marginTop: 0,
   },
   badge: {
     flexDirection: "row",

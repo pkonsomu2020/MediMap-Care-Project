@@ -6,10 +6,14 @@ import {
   TouchableOpacity, 
   Modal, 
   ScrollView,
-  Dimensions 
+  Dimensions,
+  StyleSheet,
+  Alert
 } from 'react-native';
-import { Menu, X, MapPin } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Menu, X, MapPin, Calendar, Map, Star, User, LogOut } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,11 +21,14 @@ const Navbar = () => {
   const { width } = Dimensions.get('window');
   const isMobile = width < 768;
 
-  const navLinks = [
-    { name: 'Home', path: 'Landing' },
-    { name: 'Find Clinics', path: 'FindClinics' },
-    { name: 'How It Works', path: 'Landing' },
-    { name: 'About', path: 'Landing' },
+  // Dashboard menu items
+  const dashboardNavItems = [
+    { name: 'Home', route: 'Landing', icon: Map },
+    { name: 'Find Clinics', route: 'FindClinics', icon: Map },
+    { name: 'My Appointments', route: 'Appointments', icon: Calendar },
+    { name: 'Clinic Directory', route: 'Directory', icon: MapPin },
+    { name: 'Reviews', route: 'Reviews', icon: Star },
+    { name: 'Profile', route: 'Profile', icon: User },
   ];
 
   const handleNavPress = (path: string) => {
@@ -30,10 +37,22 @@ const Navbar = () => {
     setIsOpen(false);
   };
 
+  const handleSignOut = async () => {
+    await AsyncStorage.removeItem('token');
+    Alert.alert('Signed out', 'You have been signed out.', [
+      { text: 'OK', onPress: () => navigation.navigate('Login' as never) },
+    ]);
+    setIsOpen(false);
+  };
+
+  const toggleMenu = () => {
+    setIsOpen(!isOpen);
+  };
+
   return (
     <View 
       style={{
-        position: 'absolute',
+        position: 'relative',
         top: 0,
         left: 0,
         right: 0,
@@ -52,7 +71,7 @@ const Navbar = () => {
         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* Logo */}
           <TouchableOpacity 
-            onPress={() => handleNavPress('Home')}
+            onPress={() => handleNavPress('Landing')}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}
           >
             <View style={{ width: 32, height: 32, backgroundColor: '#3b82f6', borderRadius: 8 }} />
@@ -64,16 +83,21 @@ const Navbar = () => {
           {/* Desktop Navigation */}
           {!isMobile && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 32 }}>
-              {navLinks.map((link) => (
-                <TouchableOpacity
-                  key={link.name}
-                  onPress={() => handleNavPress(link.path)}
-                >
-                  <Text style={{ fontSize: 14, fontWeight: '500', color: '#6b7280' }}>
-                    {link.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              <TouchableOpacity onPress={() => handleNavPress('Landing')}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: '#6b7280' }}>
+                  Home
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleNavPress('FindClinics')}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: '#6b7280' }}>
+                  Find Clinics
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleNavPress('Directory')}>
+                <Text style={{ fontSize: 14, fontWeight: '500', color: '#6b7280' }}>
+                  Clinic Directory
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
 
@@ -107,10 +131,10 @@ const Navbar = () => {
           {/* Mobile Menu Button */}
           {isMobile && (
             <TouchableOpacity
-              onPress={() => setIsOpen(!isOpen)}
+              onPress={toggleMenu}
               style={{ padding: 8, borderRadius: 6 }}
             >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
+              {isOpen ? <X size={24} color="#1f2937" /> : <Menu size={24} color="#1f2937" />}
             </TouchableOpacity>
           )}
         </View>
@@ -120,66 +144,149 @@ const Navbar = () => {
       <Modal
         visible={isOpen && isMobile}
         animationType="slide"
-        transparent
+        transparent={false}
         onRequestClose={() => setIsOpen(false)}
       >
-        <View 
-          style={{
-            flex: 1,
-            backgroundColor: 'white',
-            marginTop: 64,
-            borderTopWidth: 1,
-            borderTopColor: '#e2e8f0',
-          }}
-        >
-          <ScrollView style={{ padding: 16, gap: 12 }}>
-            {navLinks.map((link) => (
-              <TouchableOpacity
-                key={link.name}
-                onPress={() => handleNavPress(link.path)}
-                style={{ 
-                  paddingHorizontal: 12, 
-                  paddingVertical: 8, 
-                  borderRadius: 6,
-                }}
-              >
-                <Text style={{ fontSize: 16, fontWeight: '500', color: '#1f2937' }}>
-                  {link.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-            <View style={{ paddingTop: 16, gap: 8, borderTopWidth: 1, borderTopColor: '#e2e8f0' }}>
+        <SafeAreaView style={styles.container}>
+          {/* Header in modal */}
+          <View style={styles.header}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ width: 32, height: 32, backgroundColor: '#3b82f6', borderRadius: 8 }} />
+              <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937' }}>
+                MediMap Care
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setIsOpen(false)}
+              style={{ padding: 8, borderRadius: 6 }}
+            >
+              <X size={24} color="#1f2937" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Dashboard Navigation Items */}
+          <ScrollView style={styles.navList}>
+            {dashboardNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <TouchableOpacity
+                  key={item.name}
+                  style={styles.navItem}
+                  onPress={() => handleNavPress(item.route)}
+                >
+                  <Icon size={20} color="#333" />
+                  <Text style={styles.navText}>{item.name}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            
+            {/* Auth Section */}
+            <View style={styles.authSection}>
               <TouchableOpacity 
                 onPress={() => handleNavPress('Login')}
-                style={{ 
-                  padding: 12, 
-                  borderWidth: 1, 
-                  borderColor: '#d1d5db',
-                  borderRadius: 6,
-                  alignItems: 'center',
-                }}
+                style={styles.loginButton}
               >
-                <Text style={{ fontSize: 14, fontWeight: '500' }}>Login</Text>
+                <Text style={styles.loginButtonText}>Login</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={() => handleNavPress('Signup')}
-                style={{ 
-                  padding: 12, 
-                  backgroundColor: '#3b82f6',
-                  borderRadius: 6,
-                  alignItems: 'center',
-                }}
+                style={styles.signupButton}
               >
-                <Text style={{ fontSize: 14, fontWeight: '500', color: 'white' }}>
-                  Get Started
-                </Text>
+                <Text style={styles.signupButtonText}>Get Started</Text>
+              </TouchableOpacity>
+              
+              {/* Sign Out Option */}
+              <TouchableOpacity 
+                onPress={handleSignOut}
+                style={styles.signOutButton}
+              >
+                <LogOut size={20} color="#6b7280" />
+                <Text style={styles.signOutText}>Sign Out</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
-        </View>
+        </SafeAreaView>
       </Modal>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  navList: {
+    flex: 1,
+    paddingVertical: 16,
+  },
+  navItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+  },
+  navText: {
+    marginLeft: 12,
+    fontSize: 16,
+    color: '#111',
+    fontWeight: '500',
+  },
+  authSection: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    marginTop: 20,
+    gap: 12,
+  },
+  loginButton: {
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  loginButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  signupButton: {
+    padding: 16,
+    backgroundColor: '#3b82f6',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  signupButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: 'white',
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 8,
+    marginTop: 8,
+  },
+  signOutText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+});
 
 export default Navbar;

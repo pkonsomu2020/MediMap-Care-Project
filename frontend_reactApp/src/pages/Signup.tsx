@@ -8,6 +8,10 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Eye, EyeOff, User, Mail, Lock, Phone, MapPin } from "lucide-react-native";
@@ -45,121 +49,137 @@ const Signup: React.FC = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.header}>
-        <MapPin size={64} color="#3B82F6" />
-        <Text style={styles.title}>Join MediMap Care</Text>
-        <Text style={styles.subtitle}>Start your journey to better healthcare</Text>
-      </View>
-
-      {/* Radio Switch */}
-      <View style={styles.radioContainer}>
-        <TouchableOpacity
-          style={[
-            styles.radioOption,
-            userType === "patient" && styles.radioOptionSelected,
-          ]}
-          onPress={() => setUserType("patient")}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <User color={userType === "patient" ? "#fff" : "#3B82F6"} />
-          <Text
-            style={[
-              styles.radioText,
-              userType === "patient" && styles.radioTextSelected,
-            ]}
-          >
-            Patient
+          <View style={styles.header}>
+            <MapPin size={64} color="#3B82F6" />
+            <Text style={styles.title}>Join MediMap Care</Text>
+            <Text style={styles.subtitle}>Start your journey to better healthcare</Text>
+          </View>
+
+          {/* Radio Switch */}
+          <View style={styles.radioContainer}>
+            <TouchableOpacity
+              style={[
+                styles.radioOption,
+                userType === "patient" && styles.radioOptionSelected,
+              ]}
+              onPress={() => setUserType("patient")}
+            >
+              <User color={userType === "patient" ? "#fff" : "#3B82F6"} />
+              <Text
+                style={[
+                  styles.radioText,
+                  userType === "patient" && styles.radioTextSelected,
+                ]}
+              >
+                Patient
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.radioOption,
+                userType === "clinic" && styles.radioOptionSelected,
+              ]}
+              onPress={() => setUserType("clinic")}
+            >
+              <MapPin color={userType === "clinic" ? "#fff" : "#3B82F6"} />
+              <Text
+                style={[
+                  styles.radioText,
+                  userType === "clinic" && styles.radioTextSelected,
+                ]}
+              >
+                Clinic
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Form Inputs */}
+          <View style={styles.inputGroup}>
+            <User style={styles.icon} color="#6B7280" />
+            <TextInput
+              placeholder="Full Name"
+              value={formData.name}
+              onChangeText={(v) => handleChange("name", v)}
+              style={styles.input}
+              returnKeyType="next"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Mail style={styles.icon} color="#6B7280" />
+            <TextInput
+              placeholder="Email Address"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={formData.email}
+              onChangeText={(v) => handleChange("email", v)}
+              style={styles.input}
+              returnKeyType="next"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Phone style={styles.icon} color="#6B7280" />
+            <TextInput
+              placeholder="Phone Number"
+              keyboardType="phone-pad"
+              value={formData.phone}
+              onChangeText={(v) => handleChange("phone", v)}
+              style={styles.input}
+              returnKeyType="next"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Lock style={styles.icon} color="#6B7280" />
+            <TextInput
+              placeholder="Password"
+              secureTextEntry={!showPassword}
+              value={formData.password}
+              onChangeText={(v) => handleChange("password", v)}
+              style={styles.input}
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword(!showPassword)}
+              style={styles.eyeIcon}
+            >
+              {showPassword ? <EyeOff color="#6B7280" /> : <Eye color="#6B7280" />}
+            </TouchableOpacity>
+          </View>
+
+          {/* Submit */}
+          <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+            <Text style={styles.buttonText}>Create Account</Text>
+          </TouchableOpacity>
+
+          {/* Login link */}
+          <Text style={styles.footerText}>
+            Already have an account?{" "}
+            <Text
+              style={styles.link}
+              onPress={() => navigation.navigate("Login")}
+            >
+              Sign in
+            </Text>
           </Text>
-        </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[
-            styles.radioOption,
-            userType === "clinic" && styles.radioOptionSelected,
-          ]}
-          onPress={() => setUserType("clinic")}
-        >
-          <MapPin color={userType === "clinic" ? "#fff" : "#3B82F6"} />
-          <Text
-            style={[
-              styles.radioText,
-              userType === "clinic" && styles.radioTextSelected,
-            ]}
-          >
-            Clinic
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Form Inputs */}
-      <View style={styles.inputGroup}>
-        <User style={styles.icon} color="#6B7280" />
-        <TextInput
-          placeholder="Full Name"
-          value={formData.name}
-          onChangeText={(v) => handleChange("name", v)}
-          style={styles.input}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Mail style={styles.icon} color="#6B7280" />
-        <TextInput
-          placeholder="Email Address"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          value={formData.email}
-          onChangeText={(v) => handleChange("email", v)}
-          style={styles.input}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Phone style={styles.icon} color="#6B7280" />
-        <TextInput
-          placeholder="Phone Number"
-          keyboardType="phone-pad"
-          value={formData.phone}
-          onChangeText={(v) => handleChange("phone", v)}
-          style={styles.input}
-        />
-      </View>
-
-      <View style={styles.inputGroup}>
-        <Lock style={styles.icon} color="#6B7280" />
-        <TextInput
-          placeholder="Password"
-          secureTextEntry={!showPassword}
-          value={formData.password}
-          onChangeText={(v) => handleChange("password", v)}
-          style={styles.input}
-        />
-        <TouchableOpacity
-          onPress={() => setShowPassword(!showPassword)}
-          style={styles.eyeIcon}
-        >
-          {showPassword ? <EyeOff color="#6B7280" /> : <Eye color="#6B7280" />}
-        </TouchableOpacity>
-      </View>
-
-      {/* Submit */}
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Create Account</Text>
-      </TouchableOpacity>
-
-      {/* Login link */}
-      <Text style={styles.footerText}>
-        Already have an account?{" "}
-        <Text
-          style={styles.link}
-          onPress={() => navigation.navigate("Login")}
-        >
-          Sign in
-        </Text>
-      </Text>
-
-      <Toast />
-    </ScrollView>
+          <Toast />
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
@@ -167,9 +187,12 @@ export default Signup;
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: "#fff",
+  },
+  scrollContainer: {
     flexGrow: 1,
     padding: 24,
-    backgroundColor: "#fff",
     justifyContent: "center",
   },
   header: {

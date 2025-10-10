@@ -8,6 +8,10 @@ import {
   Alert,
   ScrollView,
   StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { MapPin, Mail, Lock, Eye, EyeOff } from "lucide-react-native";
@@ -31,123 +35,137 @@ const Login = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Top side */}
-      <LinearGradient
-        colors={["#2563eb", "#3b82f6"]}
-        style={styles.rightContainer}
-      >
-        <View style={styles.heroCircle}>
-          <MapPin color="#fff" size={64} />
-        </View>
-        <Text style={styles.heroTitle}>Find Care Near You</Text>
-        <Text style={styles.heroSubtitle}>
-          Access quality healthcare anytime, anywhere with MediMap Care
-        </Text>
-
-        <View style={styles.statsContainer}>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>500+</Text>
-            <Text style={styles.statLabel}>Verified Clinics</Text>
-          </View>
-          <View style={styles.stat}>
-            <Text style={styles.statValue}>10K+</Text>
-            <Text style={styles.statLabel}>Happy Patients</Text>
-          </View>
-        </View>
-      </LinearGradient>
-
-      {/* Bottom Side - Form */}
-      <View style={styles.formContainer}>
-        {/* Logo */}
-        <TouchableOpacity
-          style={styles.logoContainer}
-          onPress={() => navigation.navigate("Landing" as never)}
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Image
-            source={require("../assets/logo.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={styles.logoText}>MediMap Care</Text>
-        </TouchableOpacity>
-
-        {/* Header */}
-        <Text style={styles.title}>Welcome Back</Text>
-        <Text style={styles.subtitle}>
-          Sign in to access your healthcare dashboard
-        </Text>
-
-        {/* Email Input */}
-        <View style={styles.inputContainer}>
-          <Mail color="#888" size={20} style={styles.icon} />
-          <TextInput
-            placeholder="you@example.com"
-            value={email}
-            onChangeText={setEmail}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-          />
-        </View>
-
-        {/* Password Input */}
-        <View style={styles.inputContainer}>
-          <Lock color="#888" size={20} style={styles.icon} />
-          <TextInput
-            placeholder="••••••••"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            style={styles.input}
-          />
-          <TouchableOpacity
-            onPress={() => setShowPassword(!showPassword)}
-            style={styles.iconRight}
+          {/* Top side */}
+          <LinearGradient
+            colors={["#2563eb", "#3b82f6"]}
+            style={styles.rightContainer}
           >
-            {showPassword ? (
-              <EyeOff color="#888" size={20} />
-            ) : (
-              <Eye color="#888" size={20} />
-            )}
-          </TouchableOpacity>
-        </View>
+            <View style={styles.heroCircle}>
+              <MapPin color="#fff" size={64} />
+            </View>
+            <Text style={styles.heroTitle}>Find Care Near You</Text>
+            <Text style={styles.heroSubtitle}>
+              Access quality healthcare anytime, anywhere with MediMap Care
+            </Text>
 
-        {/* Forgot Password */}
-        <TouchableOpacity style={styles.forgot}>
-          <Text style={styles.forgotText}>Forgot password?</Text>
-        </TouchableOpacity>
+            <View style={styles.statsContainer}>
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>500+</Text>
+                <Text style={styles.statLabel}>Verified Clinics</Text>
+              </View>
+              <View style={styles.stat}>
+                <Text style={styles.statValue}>10K+</Text>
+                <Text style={styles.statLabel}>Happy Patients</Text>
+              </View>
+            </View>
+          </LinearGradient>
 
-        {/* Submit Button */}
-        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>Sign In</Text>
-        </TouchableOpacity>
+          {/* Bottom Side - Form */}
+          <View style={styles.formContainer}>
+            {/* Logo */}
+            <TouchableOpacity
+              style={styles.logoContainer}
+              onPress={() => navigation.navigate("Landing" as never)}
+            >
+              <Image
+                source={require("../assets/logo.png")}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <Text style={styles.logoText}>MediMap Care</Text>
+            </TouchableOpacity>
 
-        {/* Sign Up Link */}
-        <Text style={styles.signupText}>
-          Don’t have an account?{" "}
-          <Text
-            style={styles.signupLink}
-            onPress={() => navigation.navigate("Signup" as never)}
-          >
-            Sign up for free
-          </Text>
-        </Text>
-      </View>
-    </ScrollView>
+            {/* Header */}
+            <Text style={styles.title}>Welcome Back</Text>
+            <Text style={styles.subtitle}>
+              Sign in to access your healthcare dashboard
+            </Text>
+
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
+              <Mail color="#888" size={20} style={styles.icon} />
+              <TextInput
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+              />
+            </View>
+
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <Lock color="#888" size={20} style={styles.icon} />
+              <TextInput
+                placeholder="••••••••"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                style={styles.input}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.iconRight}
+              >
+                {showPassword ? (
+                  <EyeOff color="#888" size={20} />
+                ) : (
+                  <Eye color="#888" size={20} />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* Forgot Password */}
+            <TouchableOpacity style={styles.forgot}>
+              <Text style={styles.forgotText}>Forgot password?</Text>
+            </TouchableOpacity>
+
+            {/* Submit Button */}
+            <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+              <Text style={styles.buttonText}>Sign In</Text>
+            </TouchableOpacity>
+
+            {/* Sign Up Link */}
+            <Text style={styles.signupText}>
+              Don't have an account?{" "}
+              <Text
+                style={styles.signupLink}
+                onPress={() => navigation.navigate("Signup" as never)}
+              >
+                Sign up for free
+              </Text>
+            </Text>
+          </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    flexDirection: "column",
+    flex: 1,
     backgroundColor: "#fff",
+  },
+  scrollContainer: {
+    flexGrow: 1,
   },
   formContainer: {
     flex: 1,
     padding: 24,
     justifyContent: "center",
+    minHeight: 500, // Ensure form container has minimum height
   },
   logoContainer: {
     flexDirection: "row",
@@ -222,7 +240,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   rightContainer: {
-    flex: 1,
+    minHeight: 300,
     alignItems: "center",
     justifyContent: "center",
     padding: 32,
@@ -268,4 +286,3 @@ const styles = StyleSheet.create({
 });
 
 export default Login;
-

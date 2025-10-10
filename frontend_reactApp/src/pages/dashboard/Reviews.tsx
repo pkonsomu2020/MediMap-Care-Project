@@ -2,14 +2,18 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
+  TouchableOpacity,
+  TextInput,
   StyleSheet,
+  Alert,
+  ActivityIndicator,
+  RefreshControl, // Add this import
 } from "react-native";
-import { api } from "../../lib/api"; // adjust path if needed
-import { Star } from "lucide-react-native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Star, ThumbsUp, ChevronLeft } from "lucide-react-native";
+import { api } from "../../lib/api";
 
 type Review = {
   review_id: number;
@@ -25,50 +29,83 @@ type Clinic = {
   name: string;
 };
 
+// Define the route params type
+type ReviewsRouteParams = {
+  clinicId?: string;
+};
+
+// Define the route prop type
+type ReviewsRouteProp = RouteProp<{ Reviews: ReviewsRouteParams }, 'Reviews'>;
+
 export default function Reviews() {
+  const navigation = useNavigation();
+  const route = useRoute<ReviewsRouteProp>();
+  const clinicIdParam = route.params?.clinicId;
+  
   const [reviews, setReviews] = useState<Review[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedClinicId, setSelectedClinicId] = useState<number | null>(null);
+  const [selectedClinicId, setSelectedClinicId] = useState<number | null>(
+    clinicIdParam ? parseInt(clinicIdParam) : null
+  );
   const [newReview, setNewReview] = useState({
-    clinic_id: "",
+    clinic_id: clinicIdParam || "",
     rating: 0,
     comment: "",
   });
 
   useEffect(() => {
-    const loadClinics = async () => {
-      try {
-        const data = await api.listClinics();
-        setClinics(data);
-        if (data.length > 0) setSelectedClinicId(data[0].clinic_id);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load clinics");
-      }
-    };
     loadClinics();
   }, []);
 
   useEffect(() => {
-    if (selectedClinicId) loadReviews(selectedClinicId);
+    if (selectedClinicId) {
+      loadReviews(selectedClinicId);
+    }
   }, [selectedClinicId]);
+
+  const loadClinics = async () => {
+    try {
+      const data = await api.listClinics();
+      setClinics(data);
+      if (!selectedClinicId && data.length > 0) {
+        setSelectedClinicId(data[0].clinic_id);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : "Failed to load clinics";
+      setError(errorMessage);
+    }
+  };
 
   const loadReviews = async (clinicId: number) => {
     try {
-      setLoading(true);
       setError(null);
       const data = await api.listReviewsByClinic(clinicId);
       setReviews(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load reviews");
+      const errorMessage = err instanceof Error ? err.message : "Failed to load reviews";
+      setError(errorMessage);
     } finally {
       setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    if (selectedClinicId) {
+      loadReviews(selectedClinicId);
     }
   };
 
   const handleSubmitReview = async () => {
-    if (!newReview.clinic_id || newReview.rating === 0) return;
+    if (!newReview.clinic_id || newReview.rating === 0) {
+      Alert.alert("Error", "Please select a clinic and provide a rating");
+      return;
+    }
+
     try {
       await api.createReview({
         clinic_id: parseInt(newReview.clinic_id),
@@ -76,235 +113,494 @@ export default function Reviews() {
         comment: newReview.comment || undefined,
       });
       setNewReview({ clinic_id: "", rating: 0, comment: "" });
-      if (selectedClinicId) loadReviews(selectedClinicId);
+      // Reload reviews for the selected clinic
+      if (selectedClinicId) {
+        loadReviews(selectedClinicId);
+      }
+      Alert.alert("Success", "Review submitted successfully!");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to submit review");
+      const errorMessage = err instanceof Error ? err.message : "Failed to submit review";
+      Alert.alert("Error", errorMessage);
     }
   };
 
-  const renderStars = (rating: number, interactive = false, onSelect?: (r: number) => void) => {
-    return (
-      <View style={styles.starRow}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <TouchableOpacity
-            key={i}
-            disabled={!interactive}
-            onPress={() => interactive && onSelect && onSelect(i + 1)}
-          >
-            <Star
-              size={24}
-              color={i < rating ? "#facc15" : "#d1d5db"}
-              fill={i < rating ? "#facc15" : "none"}
-            />
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
+  const renderStars = (rating: number, size: number = 16, interactive: boolean = false, onPress?: (rating: number) => void) => {
+    return Array.from({ length: 5 }).map((_, i) => (
+      <TouchableOpacity
+        key={i}
+        disabled={!interactive}
+        onPress={() => onPress?.(i + 1)}
+      >
+        <Star
+          size={size}
+          color={i < rating ? "#F59E0B" : "#D1D5DB"}
+          fill={i < rating ? "#F59E0B" : "transparent"}
+        />
+      </TouchableOpacity>
+    ));
   };
 
   const getClinicName = (clinicId: number) => {
-    const clinic = clinics.find((c) => c.clinic_id === clinicId);
+    const clinic = clinics.find(c => c.clinic_id === clinicId);
     return clinic?.name || `Clinic #${clinicId}`;
   };
 
+  const ReviewCard = ({ review, index }: { review: Review; index: number }) => (
+    <View style={styles.reviewCard}>
+      <View style={styles.reviewHeader}>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarText}>U{review.user_id}</Text>
+        </View>
+        
+        <View style={styles.reviewInfo}>
+          <View style={styles.reviewTitle}>
+            <Text style={styles.userName}>User #{review.user_id}</Text>
+            <Text style={styles.date}>
+              {new Date(review.created_at).toLocaleDateString()}
+            </Text>
+          </View>
+          <Text style={styles.clinicName}>
+            {getClinicName(review.clinic_id)}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.starsContainer}>
+        {renderStars(review.rating)}
+      </View>
+
+      {review.comment && (
+        <Text style={styles.comment}>{review.comment}</Text>
+      )}
+
+      <TouchableOpacity style={styles.helpfulButton}>
+        <ThumbsUp size={16} color="#6B7280" />
+        <Text style={styles.helpfulText}>Helpful</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Reviews</Text>
-        <Text style={styles.headerSubtitle}>
-          Share your experience and read others' feedback
-        </Text>
-      </View>
-
-      {/* Write Review Section */}
-      <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Write a Review</Text>
-
-        {/* Clinic Selector */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Clinic</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {clinics.map((clinic) => (
-              <TouchableOpacity
-                key={clinic.clinic_id}
-                style={[
-                  styles.clinicButton,
-                  newReview.clinic_id === clinic.clinic_id.toString() && styles.clinicButtonSelected,
-                ]}
-                onPress={() =>
-                  setNewReview((prev) => ({ ...prev, clinic_id: clinic.clinic_id.toString() }))
-                }
-              >
-                <Text
-                  style={[
-                    styles.clinicButtonText,
-                    newReview.clinic_id === clinic.clinic_id.toString() && styles.clinicButtonTextActive,
-                  ]}
-                >
-                  {clinic.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Rating */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Rating</Text>
-          {renderStars(newReview.rating, true, (r) =>
-            setNewReview((prev) => ({ ...prev, rating: r }))
-          )}
-        </View>
-
-        {/* Comment */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Your Review</Text>
-          <TextInput
-            style={styles.textArea}
-            placeholder="Share your experience..."
-            multiline
-            value={newReview.comment}
-            onChangeText={(text) => setNewReview((prev) => ({ ...prev, comment: text }))}
-          />
-        </View>
-
-        <TouchableOpacity style={styles.button} onPress={handleSubmitReview}>
-          <Text style={styles.buttonText}>Submit Review</Text>
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <ChevronLeft size={24} color="#111827" />
         </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Reviews</Text>
+          <Text style={styles.headerSubtitle}>
+            Share your experience and read others' feedback
+          </Text>
+        </View>
       </View>
 
-      {/* Clinic Selector for Viewing */}
-      <View style={styles.card}>
-        <Text style={styles.label}>Select Clinic to View Reviews</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          {clinics.map((clinic) => (
-            <TouchableOpacity
-              key={clinic.clinic_id}
-              style={[
-                styles.clinicButton,
-                selectedClinicId === clinic.clinic_id && styles.clinicButtonSelected,
-              ]}
-              onPress={() => setSelectedClinicId(clinic.clinic_id)}
-            >
-              <Text
-                style={[
-                  styles.clinicButtonText,
-                  selectedClinicId === clinic.clinic_id && styles.clinicButtonTextActive,
-                ]}
-              >
-                {clinic.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* States */}
-      {loading && (
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" />
-          <Text>Loading reviews...</Text>
-        </View>
-      )}
-
-      {error && (
-        <View style={styles.centered}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.button} onPress={() => selectedClinicId && loadReviews(selectedClinicId)}>
-            <Text style={styles.buttonText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {!loading && !error && reviews.length === 0 && (
-        <Text style={styles.noReviews}>No reviews yet for this clinic</Text>
-      )}
-
-      {/* Reviews */}
-      {!loading &&
-        !error &&
-        reviews.map((review) => (
-          <View key={review.review_id} style={styles.reviewCard}>
-            <View style={styles.reviewHeader}>
-              <View>
-                <Text style={styles.reviewUser}>User #{review.user_id}</Text>
-                <Text style={styles.reviewClinic}>{getClinicName(review.clinic_id)}</Text>
+      {/* Content */}
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        <View style={styles.grid}>
+          {/* Write Review */}
+          <View style={styles.writeReviewContainer}>
+            <View style={styles.writeReviewCard}>
+              <Text style={styles.sectionTitle}>Write a Review</Text>
+              
+              {/* Clinic Selector */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Clinic</Text>
+                <ScrollView style={styles.clinicSelector}>
+                  {clinics.map((clinic) => (
+                    <TouchableOpacity
+                      key={clinic.clinic_id}
+                      style={[
+                        styles.clinicOption,
+                        newReview.clinic_id === clinic.clinic_id.toString() && styles.clinicOptionSelected
+                      ]}
+                      onPress={() => setNewReview(prev => ({ 
+                        ...prev, 
+                        clinic_id: clinic.clinic_id.toString() 
+                      }))}
+                    >
+                      <Text style={[
+                        styles.clinicOptionText,
+                        newReview.clinic_id === clinic.clinic_id.toString() && styles.clinicOptionTextSelected
+                      ]}>
+                        {clinic.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </View>
-              <Text style={styles.reviewDate}>
-                {new Date(review.created_at).toLocaleDateString()}
-              </Text>
+
+              {/* Rating */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Rating</Text>
+                <View style={styles.starsInput}>
+                  {renderStars(newReview.rating, 24, true, (rating) => 
+                    setNewReview(prev => ({ ...prev, rating }))
+                  )}
+                </View>
+              </View>
+
+              {/* Comment */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Your Review</Text>
+                <TextInput
+                  style={styles.textArea}
+                  placeholder="Share your experience with the clinic..."
+                  value={newReview.comment}
+                  onChangeText={(text) => setNewReview(prev => ({ ...prev, comment: text }))}
+                  multiline
+                  numberOfLines={5}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReview}>
+                <Text style={styles.submitButtonText}>Submit Review</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Reviews List */}
+          <View style={styles.reviewsContainer}>
+            {/* Clinic Selector */}
+            <View style={styles.clinicSelectorCard}>
+              <Text style={styles.label}>Select Clinic to View Reviews</Text>
+              <ScrollView horizontal style={styles.clinicSelectorHorizontal}>
+                {clinics.map((clinic) => (
+                  <TouchableOpacity
+                    key={clinic.clinic_id}
+                    style={[
+                      styles.clinicTab,
+                      selectedClinicId === clinic.clinic_id && styles.clinicTabSelected
+                    ]}
+                    onPress={() => setSelectedClinicId(clinic.clinic_id)}
+                  >
+                    <Text style={[
+                      styles.clinicTabText,
+                      selectedClinicId === clinic.clinic_id && styles.clinicTabTextSelected
+                    ]}>
+                      {clinic.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
 
-            {renderStars(review.rating)}
+            {/* Loading State */}
+            {loading && (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#3B82F6" />
+                <Text style={styles.loadingText}>Loading reviews...</Text>
+              </View>
+            )}
 
-            {review.comment ? <Text style={styles.comment}>{review.comment}</Text> : null}
+            {/* Error State */}
+            {error && !loading && (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity 
+                  style={styles.retryButton}
+                  onPress={() => selectedClinicId && loadReviews(selectedClinicId)}
+                >
+                  <Text style={styles.retryButtonText}>Try Again</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Reviews */}
+            {!loading && !error && (
+              <>
+                {reviews.length === 0 ? (
+                  <View style={styles.emptyState}>
+                    <Text style={styles.emptyText}>No reviews yet for this clinic</Text>
+                  </View>
+                ) : (
+                  reviews.map((review, index) => (
+                    <ReviewCard key={review.review_id} review={review} index={index} />
+                  ))
+                )}
+              </>
+            )}
           </View>
-        ))}
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
-  header: { marginBottom: 16 },
-  headerTitle: { fontSize: 28, fontWeight: "bold", marginBottom: 4 },
-  headerSubtitle: { color: "#6b7280" },
-  card: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
+  container: {
+    flex: 1,
+    backgroundColor: "#F9FAFB",
   },
-  sectionTitle: { fontSize: 20, fontWeight: "600", marginBottom: 12 },
-  inputGroup: { marginBottom: 12 },
-  label: { fontWeight: "500", marginBottom: 6 },
-  textArea: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 8,
-    padding: 8,
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  button: {
-    backgroundColor: "#2563eb",
-    padding: 12,
-    borderRadius: 8,
+  header: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "white",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
   },
-  buttonText: { color: "#fff", fontWeight: "600" },
-  starRow: { flexDirection: "row", gap: 6 },
-  clinicButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "#d1d5db",
-    borderRadius: 8,
+  backButton: {
+    padding: 8,
     marginRight: 8,
   },
-  clinicButtonSelected: { backgroundColor: "#2563eb", borderColor: "#2563eb" },
-  clinicButtonText: { color: "#374151" },
-  clinicButtonTextActive: { color: "#fff" },
-  centered: { alignItems: "center", marginVertical: 24 },
-  errorText: { color: "#dc2626", marginBottom: 12 },
-  noReviews: { textAlign: "center", color: "#6b7280", marginVertical: 24 },
-  reviewCard: {
-    backgroundColor: "#fff",
+  headerContent: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#111827",
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  content: {
+    flex: 1,
+  },
+  grid: {
     padding: 16,
+  },
+  writeReviewContainer: {
+    marginBottom: 16,
+  },
+  writeReviewCard: {
+    backgroundColor: "white",
     borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#111827",
+    marginBottom: 16,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#374151",
+    marginBottom: 8,
+  },
+  clinicSelector: {
+    maxHeight: 120,
+  },
+  clinicOption: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginBottom: 4,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+  },
+  clinicOptionSelected: {
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
+  },
+  clinicOptionText: {
+    fontSize: 14,
+    color: "#374151",
+  },
+  clinicOptionTextSelected: {
+    color: "white",
+    fontWeight: "500",
+  },
+  starsInput: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  submitButton: {
+    backgroundColor: "#3B82F6",
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  reviewsContainer: {
+    flex: 1,
+  },
+  clinicSelectorCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  clinicSelectorHorizontal: {
+    marginTop: 8,
+  },
+  clinicTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    marginRight: 8,
+  },
+  clinicTabSelected: {
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
+  },
+  clinicTabText: {
+    fontSize: 14,
+    color: "#374151",
+    fontWeight: "500",
+  },
+  clinicTabTextSelected: {
+    color: "white",
+  },
+  reviewCard: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 12,
-    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   reviewHeader: {
     flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#3B82F6",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  avatarText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  reviewInfo: {
+    flex: 1,
+  },
+  reviewTitle: {
+    flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 4,
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  date: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  clinicName: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  starsContainer: {
+    flexDirection: "row",
+    gap: 4,
     marginBottom: 8,
   },
-  reviewUser: { fontWeight: "600" },
-  reviewClinic: { color: "#6b7280", fontSize: 12 },
-  reviewDate: { color: "#9ca3af", fontSize: 12 },
-  comment: { marginTop: 8, color: "#111827" },
+  comment: {
+    fontSize: 16,
+    color: "#374151",
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  helpfulButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  helpfulText: {
+    marginLeft: 6,
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#6B7280",
+  },
+  errorContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#EF4444",
+    textAlign: "center",
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: "#3B82F6",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  retryButtonText: {
+    color: "white",
+    fontWeight: "500",
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: "#6B7280",
+    textAlign: "center",
+  },
 });
