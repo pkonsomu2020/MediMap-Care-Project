@@ -16,7 +16,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { MapPin, Mail, Lock, Eye, EyeOff } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { api, setAuthToken } from "../lib/api"; // adjust path as needed
+import { api, setAuthToken, setUserId } from "../lib/api"; // adjust path as needed
 
 const Login = () => {
   const navigation = useNavigation();
@@ -26,8 +26,9 @@ const Login = () => {
 
   const handleSubmit = async () => {
     try {
-      const { token } = await api.login({ email, password });
-      setAuthToken(token);
+      const response = await api.login({ email, password });
+      setAuthToken(response["token"]);
+      setUserId(response["user"]["user_id"])
       navigation.navigate("FindClinics" as never);
     } catch (err: any) {
       Alert.alert("Login failed", err.message || "Please try again");
