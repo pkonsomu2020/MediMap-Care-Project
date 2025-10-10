@@ -17,9 +17,20 @@ import Directory from "./src/pages/dashboard/Directory";
 import Reviews from "./src/pages/dashboard/Reviews";
 import Profile from "./src/pages/dashboard/Profile";
 import NotFound from "./src/pages/NotFound";
+import Navbar from "./src/compontents/Navbar";
 
 const queryClient = new QueryClient();
 const Stack = createStackNavigator();
+
+// Create a HOC for screens that need navbar
+const withNavbar = (Component: React.ComponentType<any>) => {
+  return (props: any) => (
+    <>
+      <Navbar />
+      <Component {...props} />
+    </>
+  );
+};
 
 const App = () => {
   return (
@@ -28,6 +39,7 @@ const App = () => {
         <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }} edges={["top", "bottom"]}>
           <NavigationContainer>
             <Stack.Navigator initialRouteName="Landing">
+              {/* Public routes without navbar */}
               <Stack.Screen
                 name="Landing"
                 component={Landing}
@@ -43,17 +55,43 @@ const App = () => {
                 component={Signup}
                 options={{ headerShown: false }}
               />
+
+              {/* Dashboard and protected routes with navbar */}
               <Stack.Screen
                 name="Dashboard"
                 component={DashboardLayout}
                 options={{ headerShown: false }}
               />
-              <Stack.Screen name="FindClinics" component={FindClinics} />
-              <Stack.Screen name="Appointments" component={Appointments} />
-              <Stack.Screen name="Directory" component={Directory} />
-              <Stack.Screen name="Reviews" component={Reviews} />
-              <Stack.Screen name="Profile" component={Profile} />
-              <Stack.Screen name="NotFound" component={NotFound} />
+              <Stack.Screen
+                name="FindClinics"
+                component={withNavbar(FindClinics)}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Appointments"
+                component={withNavbar(Appointments)}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Directory"
+                component={withNavbar(Directory)}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Reviews"
+                component={withNavbar(Reviews)}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="Profile"
+                component={withNavbar(Profile)}
+                options={{ headerShown: false }}
+              />
+              <Stack.Screen
+                name="NotFound"
+                component={withNavbar(NotFound)}
+                options={{ headerShown: false }}
+              />
             </Stack.Navigator>
           </NavigationContainer>
 

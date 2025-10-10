@@ -136,7 +136,7 @@ async listClinics(params?: { q?: string; min_rating?: number }) {
   async updateAppointment(
     id: number,
     changes: Partial<{
-      status: "pending" | "confirmed" | "cancelled";
+      status: "pending" | "confirmed" | "cancelled" | "completed";
       date: string;
       time: string;
     }>
