@@ -24,6 +24,23 @@ async function getAuthToken(): Promise<string | null> {
 }
 
 /**
+ * Get stored user ID from AsyncStorage
+ */
+export async function getUserId(): Promise<number | null> {
+  try {
+    const userIdStr = await AsyncStorage.getItem("userId");
+    if (userIdStr !== null) {
+      const userId = Number(userIdStr);
+      return isNaN(userId) ? null : userId;
+    }
+    return null;
+  } catch (error) {
+    console.error("❌ Error getting userId:", error);
+    return null;
+  }
+}
+
+/**
  * Core HTTP request helper
  */
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -99,26 +116,35 @@ export const api = {
     return request<any>(`/users/me`);
   },
 
-// --- Clinics ---
-async listClinics(params?: { q?: string; min_rating?: number }) {
-  const usp = new URLSearchParams();
-  if (params?.q) usp.set("q", params.q);
-  if (typeof params?.min_rating === "number")
-    usp.set("min_rating", String(params.min_rating));
-  const qs = usp.toString();
+  // --- Clinics ---
+  async listClinics(params?: { q?: string; min_rating?: number }) {
+    const usp = new URLSearchParams();
+    if (params?.q) usp.set("q", params.q);
+    if (typeof params?.min_rating === "number")
+      usp.set("min_rating", String(params.min_rating));
+    const qs = usp.toString();
 
-  // Fetch all clinics from backend
-  const allClinics = await request<any[]>(`/clinics${qs ? `?${qs}` : ""}`);
+    // Fetch all clinics from backend
+    const allClinics = await request<any[]>(`/clinics${qs ? `?${qs}` : ""}`);
 
-  // ✅ Limit client-side to first 20 results for performance
-  const limitedClinics = allClinics.slice(0, 20);
+    // ✅ Limit client-side to first 20 results for performance
+    const limitedClinics = allClinics.slice(0, 20);
 
-  return limitedClinics;
-},
+    return limitedClinics;
+  },
 
   // --- Appointments ---
   async listAppointments() {
-    return request<any[]>(`/appointments`);
+    // Backend automatically filters appointments by the authenticated user's ID
+    const userId = await getUserId();
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+    return request<any[]>(`/appointments?userId=${userId}`);
+  },
+
+  async getAppointment(id: number) {
+    return request<any>(`/appointments/${id}`);
   },
 
   async createAppointment(payload: {
@@ -127,6 +153,7 @@ async listClinics(params?: { q?: string; min_rating?: number }) {
     time: string;
     status?: "pending" | "confirmed" | "cancelled";
   }) {
+    // Backend automatically adds the user_id from the JWT token
     return request<any>(`/appointments`, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -163,6 +190,7 @@ async listClinics(params?: { q?: string; min_rating?: number }) {
     rating: number;
     comment?: string;
   }) {
+    // Backend automatically adds the user_id from the JWT token
     return request<any>(`/reviews`, {
       method: "POST",
       body: JSON.stringify(payload),
@@ -183,5 +211,18 @@ export async function setAuthToken(token: string | null) {
   } catch (error) {
     // Only keep the error log
     console.error("❌ Error saving token:", error);
+  }
+}
+
+export async function setUserId(userId: number | null) {
+  try {
+    if (userId !== null && userId !== undefined) {
+      await AsyncStorage.setItem("userId", userId.toString());
+    } else {
+      await AsyncStorage.removeItem("userId");
+    }
+  } catch (error) {
+    // Only keep the error log
+    console.error("❌ Error saving userId:", error);
   }
 }

@@ -14,9 +14,9 @@ import {
   Keyboard,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { Eye, EyeOff, User, Mail, Lock, Phone, MapPin } from "lucide-react-native";
+import { Eye, EyeOff, User, Mail, Lock, Phone, MapPin, ReceiptPoundSterlingIcon } from "lucide-react-native";
 import Toast from "react-native-toast-message";
-import { api, setAuthToken } from "../lib/api";
+import { api, setAuthToken, setUserId } from "../lib/api";
 
 const Signup: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -36,11 +36,12 @@ const Signup: React.FC = () => {
   const handleSubmit = async () => {
     try {
       const role = userType === "clinic" ? "clinic" : "user";
-      const { token } = await api.register({
+      const response = await api.register({
         ...formData,
         role,
       });
-      setAuthToken(token);
+      setAuthToken(response["token"]);
+      setUserId(response["user"]["user_id"])
       Toast.show({ type: "success", text1: "Signup successful!" });
       navigation.navigate("FindClinics");
     } catch (err: any) {

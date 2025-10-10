@@ -75,13 +75,13 @@ export const styles = StyleSheet.create({
   badgeText: { fontWeight: "600" },
 
   sectionTitle: { fontWeight: "600", marginBottom: 4 },
-  buttonRow: { flexDirection: "row", marginTop: 12, gap: 8 },
-  button: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, alignItems: "center", flexDirection: "row" },
+  buttonRow: { flexDirection: "row", marginTop: 12, gap: 2 },
+  button: { paddingHorizontal: 5, paddingVertical: 8, borderRadius: 8, alignItems: "center", flexDirection: "row" },
   primaryButton: { backgroundColor: "#2563eb" },
   primaryButtonText: { color: "#fff", fontWeight: "600" },
   outlineButton: { borderWidth: 1, borderColor: "#2563eb", marginLeft: 8 },
   outlineButtonText: { color: "#2563eb", fontWeight: "600" },
-  ghostButton: { marginLeft: 8 },
+  ghostButton: { marginLeft: 8, flexDirection: 'column' },
   ghostButtonText: { color: "#2563eb", marginLeft: 6 },
 
   centered: { alignItems: "center", justifyContent: "center", marginTop: 20 },

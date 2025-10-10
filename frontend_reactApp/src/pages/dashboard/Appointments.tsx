@@ -72,6 +72,7 @@ export default function Appointments() {
     try {
       setError(null);
       const data = await api.listAppointments();
+      console.log(data)
       setAppointments(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to load appointments";
