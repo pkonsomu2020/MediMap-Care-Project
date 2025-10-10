@@ -24,7 +24,7 @@ if (fs.existsSync(envPath)) {
   
   console.log('\n=== Recommendations ===');
   console.log('Make sure your .env file contains exactly:');
-  console.log('VITE_GOOGLE_MAPS_API_KEY=Your APi Key');
+  console.log('VITE_GOOGLE_MAPS_API_KEY=AIzaSyBYAGRvFQvkZGFgyShJfyMyOkPOL9cxVEE');
   console.log('VITE_API_BASE_URL=http://localhost:8001/api');
   console.log('\nWith:');
   console.log('- No spaces around =');
