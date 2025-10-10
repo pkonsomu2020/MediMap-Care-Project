@@ -36,7 +36,9 @@ type Clinic = {
 };
 
 const FindClinics = () => {
+  // Search UI state
   const [searchQuery, setSearchQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("all");
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(false);
@@ -152,11 +154,18 @@ const FindClinics = () => {
     <div className="min-h-full bg-muted/20">
       {/* Header */}
       <div className="bg-background border-b border-border">
-        <div className="container mx-auto px-4 lg:px-8 py-8">
-          <h1 className="text-3xl font-bold mb-2">Find Clinics Near You</h1>
-          <p className="text-muted-foreground">
-            Discover verified healthcare facilities in your area
-          </p>
+        <div className="container mx-auto px-4 lg:px-8 py-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold">Find Clinics</h1>
+              <p className="text-muted-foreground text-sm">
+                Discover nearby clinics, set radius, and get directions.
+              </p>
+            </div>
+            <div className="hidden lg:flex items-center gap-2">
+              <Badge variant="secondary">Map powered by Google</Badge>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -167,159 +176,236 @@ const FindClinics = () => {
             <div className="bg-card rounded-xl p-6 shadow-soft border border-border sticky top-24">
               <h2 className="font-semibold text-lg mb-4">Search & Filters</h2>
 
-              {/* Location */}
-              <div className="space-y-2 mb-4">
+              {/* Location input + actions */}
+              <div className="space-y-2 mb-6">
                 <label className="text-sm font-medium">Location</label>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
                     placeholder="Enter your location"
                     className="pl-10"
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSearch();
+                    }}
                   />
                 </div>
-                <Button variant="outline" size="sm" className="w-full mt-2">
-                  <Navigation className="h-4 w-4 mr-2" />
-                  Use My Location
-                </Button>
-              </div>
-
-              {/* Search */}
-              <div className="space-y-2 mb-4">
-                <label className="text-sm font-medium">Search</label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    placeholder="Clinic name or service"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
+                <div className="grid grid-cols-3 gap-2">
+                  <Button onClick={handleSearch} size="sm">
+                    <Search className="h-4 w-4 mr-2" />
+                    Search
+                  </Button>
+                  <Button onClick={handleUseMyLocation} variant="outline" size="sm">
+                    <Navigation className="h-4 w-4 mr-2" />
+                    My Location
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (userLocation) {
+                        reverseGeocode(userLocation).catch(() => {});
+                      }
+                    }}
+                    variant="ghost"
+                    size="sm"
+                    disabled={!userLocation}
+                  >
+                    Reverse Geocode
+                  </Button>
                 </div>
               </div>
 
-              {/* Specialty */}
-              <div className="space-y-2 mb-4">
-                <label className="text-sm font-medium">Specialty</label>
+              {/* Radius controls */}
+              <div className="space-y-2 mb-6">
+                <label className="text-sm font-medium">Radius</label>
+                <RadiusControls
+                  radiusKm={radiusKm}
+                  setRadiusKm={setRadiusKm}
+                  radiusMode={radiusMode}
+                  setRadiusMode={setRadiusMode}
+                  disabled={!hasUserLocation}
+                />
+              </div>
+
+              {/* Specialty (types) */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Type</label>
                 <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select specialty" />
+                    <SelectValue placeholder="All types" />
                   </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="all">All Specialties</SelectItem>
-                    <SelectItem value="general">General Practice</SelectItem>
-                    <SelectItem value="pediatrics">Pediatrics</SelectItem>
-                    <SelectItem value="cardiology">Cardiology</SelectItem>
-                    <SelectItem value="dermatology">Dermatology</SelectItem>
-                    <SelectItem value="orthopedics">Orthopedics</SelectItem>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="hospital">Hospital</SelectItem>
+                    <SelectItem value="doctor">Doctor</SelectItem>
+                    <SelectItem value="pharmacy">Pharmacy</SelectItem>
+                    <SelectItem value="clinic">Clinic</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Availability */}
-              <div className="space-y-2 mb-4">
-                <label className="text-sm font-medium">Availability</label>
-                <Select defaultValue="any">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="any">Any Time</SelectItem>
-                    <SelectItem value="today">Available Today</SelectItem>
-                    <SelectItem value="week">This Week</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Distance */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Max Distance</label>
-                <Select defaultValue="10">
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="5">Within 5 km</SelectItem>
-                    <SelectItem value="10">Within 10 km</SelectItem>
-                    <SelectItem value="20">Within 20 km</SelectItem>
-                    <SelectItem value="50">Within 50 km</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Button variant="hero" className="w-full mt-6">
-                Apply Filters
-              </Button>
             </div>
           </div>
 
-          {/* Results */}
+          {/* Results and Map */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Map Placeholder */}
-            <div className="bg-card rounded-xl h-64 flex items-center justify-center border border-border shadow-soft overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-hero opacity-10"></div>
-              <div className="relative z-10 text-center">
-                <MapPin className="h-12 w-12 mx-auto mb-2 text-primary" />
-                <p className="text-muted-foreground">Interactive Map View</p>
-                <p className="text-sm text-muted-foreground">
-                  {clinics.length} clinics found
-                </p>
-              </div>
+            {/* Map */}
+            <div className="bg-card rounded-xl h-96 border border-border shadow-soft overflow-hidden relative">
+              <GoogleMapContainer
+                center={userLocation || undefined}
+                onReady={onMapReady}
+                className="w-full h-full"
+              >
+                {({ map }) => (
+                  <>
+                    {userMarker}
+                    {clinicsMarkers}
+                    {directions?.path?.length ? <RoutePolyline path={directions.path} /> : null}
+                    {radiusMode === 'drag' && userLocation ? (
+                      <UserDragRadius
+                        center={userLocation}
+                        radiusKm={radiusKm}
+                        onCenterChange={(c) => setUserLocation(c)}
+                        onRadiusKmChange={(km) => setRadiusKm(km)}
+                        onReverseGeocode={(c) => reverseGeocode(c).catch(() => {})}
+                      />
+                    ) : null}
+
+                    {/* Info Windows */}
+                    {activeClinic ? (
+                      showCompactInfo && activeClinic.placeId ? (
+                        <PlaceDetailsInfoWindow
+                          placeId={String(activeClinic.placeId)}
+                          position={activeClinic.position}
+                          onCloseClick={() => {
+                            setActiveClinicId(null);
+                            setShowCompactInfo(false);
+                          }}
+                        />
+                      ) : (
+                        <CustomInfoWindow
+                          clinic={{
+                            id: activeClinic.id,
+                            name: activeClinic.name,
+                            position: activeClinic.position,
+                            placeId: activeClinic.placeId ? String(activeClinic.placeId) : undefined,
+                            rating: activeClinic.rating,
+                            address:
+                              activeClinic.raw?.address ||
+                              activeClinic.raw?.formattedAddress ||
+                              undefined,
+                            durationText: activeClinic.durationText,
+                            distanceText: activeClinic.distanceText,
+                            phone: activeClinic.raw?.contact || null,
+                            website: activeClinic.raw?.websiteUri || null,
+                            is_open:
+                              typeof activeClinic.raw?.is_open === "boolean"
+                                ? activeClinic.raw.is_open
+                                : null,
+                            wheelchairAccessibleEntrance:
+                              activeClinic.raw?.wheelchairAccessibleEntrance ?? null,
+                            raw: activeClinic.raw,
+                          }}
+                          onClose={() => {
+                            setActiveClinicId(null);
+                            setShowCompactInfo(false);
+                          }}
+                          onToggleCompact={
+                            activeClinic.placeId
+                              ? () => setShowCompactInfo(true)
+                              : undefined
+                          }
+                        />
+                      )
+                    ) : null}
+                  </>
+                )}
+              </GoogleMapContainer>
+
+              {/* Overlay status */}
+              {(isClinicsFetching || forward.loading || reverse.loading) && (
+                <div className="absolute top-2 left-2 bg-background/90 border border-border rounded px-3 py-1 text-xs">
+                  Loading...
+                </div>
+              )}
             </div>
 
             {/* Clinic Cards */}
             <div className="space-y-4">
-              {clinics.map((clinic, index) => (
+              {normalizedClinics.map((clinic) => (
                 <div
-                  key={clinic.clinic_id}
-                  className="bg-card rounded-xl p-6 shadow-soft border border-border hover-lift group"
-                  style={{
-                    animation: "fade-in 0.5s ease-out",
-                    animationDelay: `${index * 0.1}s`,
-                    animationFillMode: "both",
-                  }}
+                  key={String(clinic.id)}
+                  className="bg-card rounded-xl p-6 shadow-soft border border-border flex gap-4 items-start"
                 >
-                  <div className="flex flex-col md:flex-row gap-4">
-                    {/* Clinic Image/Icon */}
-                    <div
-                      className={`bg-gradient-primary rounded-lg w-full md:w-24 h-24 flex-shrink-0 flex items-center justify-center`}
-                    >
-                      <MapPin className="h-10 w-10 text-primary-foreground" />
+                  {/* Left icon / avatar box */}
+                  <div className="flex-shrink-0 rounded-lg w-20 h-20 bg-primary/10 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-md bg-primary flex items-center justify-center text-white">
+                      <MapPin className="h-6 w-6" />
+                    </div>
+                  </div>
+
+                  {/* Main content */}
+                  <div className="flex-1">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-lg">{clinic.name}</h3>
+                        <div className="flex items-center text-sm text-muted-foreground mt-1">
+                          <MapPin className="h-4 w-4 mr-2" />
+                          <span className="truncate">
+                            {clinic.raw?.address || clinic.raw?.formattedAddress || "Address unavailable"}
+                          </span>
+                          {/* distance (approx) */}
+                          {clinic.position && userLocation && (
+                            <span className="ml-3 text-muted-foreground">
+                              •{" "}
+                              {computeDistanceKm(
+                                userLocation.lat,
+                                userLocation.lng,
+                                clinic.position.lat,
+                                clinic.position.lng
+                              ).toFixed(1)}{" "}
+                              km
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="text-sm text-right">
+                        {clinic.raw?.is_active !== false ? (
+                          <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs">
+                            Available
+                          </span>
+                        ) : (
+                          <span className="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs">
+                            Unavailable
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Clinic Info */}
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="text-xl font-semibold mb-1 group-hover:text-primary transition-colors">
-                            {clinic.name}
-                          </h3>
-                          <p className="text-sm text-muted-foreground flex items-center gap-1">
-                            <MapPin className="h-4 w-4" />
-                            {clinic.address || 'Address not provided'}
-                          </p>
-                        </div>
-                        <Badge
-                          variant={
-                            (clinic.rating || 0) >= 4.5
-                              ? "default"
-                              : "secondary"
-                          }
-                          className="whitespace-nowrap"
-                        >
-                          {typeof clinic.rating === 'number' ? `${clinic.rating.toFixed(1)} ★` : 'No rating'}
-                        </Badge>
+                    <div className="flex items-center gap-4 mt-4">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Star className="h-4 w-4 mr-2 text-amber-500" />
+                        <span className="font-medium">
+                          {typeof clinic.rating === "number" ? clinic.rating.toFixed(1) : "N/A"}
+                        </span>
+                        <span className="ml-2 text-muted-foreground">
+                          ({clinic.raw?.userRatingCount || clinic.raw?.reviews_count || 0} reviews)
+                        </span>
                       </div>
 
-                      <div className="flex flex-wrap gap-4 mb-4">
-                        <div className="flex items-center gap-1">
-                          <Star className="h-4 w-4 fill-accent text-accent" />
-                          <span className="font-semibold">{typeof clinic.rating === 'number' ? clinic.rating.toFixed(1) : 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>Consultation: {typeof clinic.consultation_fee === 'number' ? `$${clinic.consultation_fee}` : 'N/A'}</span>
-                        </div>
+                      <div className="px-3 py-1 rounded-full bg-muted/50 text-sm">
+                        {clinic.raw?.category || clinic.raw?.types?.[0] || "General"}
                       </div>
+
+                      {(clinic.distanceText || clinic.durationText) && (
+                        <div className="text-sm text-muted-foreground flex items-center">
+                          <Clock className="h-4 w-4 mr-2" />
+                          <span>
+                            {clinic.distanceText || "--"} • {clinic.durationText || "--"}
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
                       <div className="flex flex-wrap gap-2">
                         <Button
@@ -349,6 +435,17 @@ const FindClinics = () => {
                   </div>
                 </div>
               ))}
+
+              {!normalizedClinics.length && hasUserLocation && (
+                <div className="text-sm text-muted-foreground">
+                  No clinics found within the selected radius. Try increasing the radius or changing filters.
+                </div>
+              )}
+              {!hasUserLocation && (
+                <div className="text-sm text-muted-foreground">
+                  Set your location to discover nearby clinics.
+                </div>
+              )}
             </div>
           </div>
         </div>

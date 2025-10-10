@@ -47,11 +47,11 @@ export async function listClinicsDb(filters: { q?: string; min_rating?: number }
 export async function getClinicDb(id: number) {
   const { data, error } = await serviceClient!.from('clinics')
     .select('clinic_id, name, address, latitude, longitude, services, consultation_fee, contact, rating')
-    .eq('clinic_id', id)
-    .maybeSingle();
   if (error) throw error;
   return data || null;
 }
+
+
 
 export async function createClinicDb(payload: { name: string; address?: string | null; latitude: number; longitude: number; services?: string | null; consultation_fee?: number | null; contact?: string | null; }) {
   const { data, error } = await serviceClient!.from('clinics')
