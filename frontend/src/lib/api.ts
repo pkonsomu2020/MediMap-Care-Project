@@ -82,6 +82,12 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
+  googleLogin(payload: { id_token: string }) {
+    return request<{ token: string; user: any }>(`/users/google-login`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
   register(payload: { name: string; email: string; phone?: string; password: string; role?: 'user' | 'clinic' | 'admin' }) {
     return request<{ token: string; user: User }>(`/users/register`, {
       method: 'POST',

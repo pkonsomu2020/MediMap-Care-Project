@@ -24,9 +24,9 @@ export async function findUserById(id: number) {
   return data || null;
 }
 
-export async function createUserDb(payload: { name: string; email: string; phone?: string | null; password: string; role?: string }) {
+export async function createUserDb(payload: { name: string; email: string; phone?: string | null; password?: string | null; role?: string }) {
   const { data, error } = await serviceClient!.from('users')
-    .insert({ name: payload.name, email: payload.email, phone: payload.phone ?? null, password: payload.password, role: payload.role ?? 'user' })
+    .insert({ name: payload.name, email: payload.email, phone: payload.phone ?? null, password: payload.password ?? null, role: payload.role ?? 'user' })
     .select('user_id, name, email, phone, role')
     .single();
   if (error) throw error;

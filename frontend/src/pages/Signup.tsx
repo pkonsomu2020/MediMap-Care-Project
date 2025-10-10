@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MapPin, Mail, Lock, User, Eye, EyeOff, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,36 @@ const Signup = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && (window as any).google && (window as any).google.accounts) {
+      (window as any).google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+        callback: handleGoogleSuccess,
+      });
+
+      (window as any).google.accounts.id.renderButton(
+        document.getElementById('google-signup-button'),
+        {
+          theme: 'outline',
+          size: 'large',
+          type: 'standard',
+          width: '100%'
+        }
+      );
+    }
+  }, []);
+
+  const handleGoogleSuccess = async (response: any) => {
+    try {
+      const { credential } = response;
+      const { token } = await api.googleLogin({ id_token: credential });
+      setAuthToken(token);
+      navigate("/dashboard/find-clinics");
+    } catch (err: any) {
+      alert(err.message || "Google login failed");
+    }
   };
 
   return (
@@ -235,6 +265,9 @@ const Signup = () => {
             <Button type="submit" variant="hero" size="lg" className="w-full">
               Create Account
             </Button>
+
+            {/* Google Sign Up */}
+            <div id="google-signup-button" className="w-full mt-4"></div>
           </form>
 
           {/* Login Link */}
