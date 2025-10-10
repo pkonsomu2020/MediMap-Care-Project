@@ -32,8 +32,9 @@ const Signup = () => {
       });
       setAuthToken(token);
       navigate("/dashboard/find-clinics");
-    } catch (err: any) {
-      alert(err.message || "Signup failed");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Signup failed";
+      alert(message);
     }
   };
 
