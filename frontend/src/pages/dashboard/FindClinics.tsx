@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
-import { Search, MapPin, Star, Clock, Phone, Navigation, Calendar as CalendarIcon } from "lucide-react";
+// frontend/src/pages/dashboard/FindClinics.tsx
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { Search, MapPin, Star, Clock, Phone, Navigation, Route, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -25,79 +26,168 @@ import { format } from "date-fns";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
+import GoogleMapContainer from "@/components/map/GoogleMapContainer";
+import RadiusControls from "@/components/map/RadiusControls";
+import { useClinicsSearch } from "@/hooks/useClinicsSearch";
+import { useGeocode } from "@/hooks/useGeocode";
+import { useDirections } from "@/hooks/useDirections";
+import CustomInfoWindow from "@/components/dashboard/CustomInfoWindow";
+import PlaceDetailsInfoWindow from "@/components/dashboard/PlaceDetailsInfoWindow";
+import PinMarker from "@/components/map/PinMarker";
 
-type Clinic = {
-  clinic_id: number;
-  name: string;
-  address?: string;
-  rating?: number;
-  contact?: string;
-  consultation_fee?: number;
-};
+// Haversine-ish approximate distance (straight-line) in km
+function computeDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+type NormalizedClinic = ReturnType<typeof useClinicsSearch> extends infer R
+  ? R extends { data: infer D }
+    ? D extends { normalized: infer N }
+      ? N extends Array<infer C>
+        ? C
+        : any
+      : any
+    : any
+  : any;
 
 const FindClinics = () => {
   // Search UI state
   const [searchQuery, setSearchQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("all");
-  const [clinics, setClinics] = useState<Clinic[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // Map/query state
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [radiusKm, setRadiusKm] = useState<number>(5);
+  const [radiusMode, setRadiusMode] = useState<"preset" | "drag">("preset");
+
+  // Selection/directions
+  const [activeClinicId, setActiveClinicId] = useState<string | number | null>(null);
+  const [showCompactInfo, setShowCompactInfo] = useState<boolean>(false);
+
+  // Details dialog state
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [detailsClinic, setDetailsClinic] = useState<NormalizedClinic | null>(null);
 
   // Booking dialog state
   const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
-  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
+  const [selectedClinic, setSelectedClinic] = useState<NormalizedClinic | null>(null);
   const [bookingDate, setBookingDate] = useState<Date>();
   const [bookingTime, setBookingTime] = useState<string>("");
   const [bookingLoading, setBookingLoading] = useState(false);
 
-  // Details dialog state
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [detailsClinic, setDetailsClinic] = useState<Clinic | null>(null);
+  // Geocode helpers
+  const { geocodeAddress, reverseGeocode, forward, reverse } = useGeocode();
 
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-  const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await api.listClinics({ q: searchQuery || undefined });
-        setClinics(data);
-      } catch (err: unknown) {
-        const error = err as Error;
-        setError(error.message || "Failed to load clinics");
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Fetch clinics via new hook
+  const { data: clinicsData, isFetching: isClinicsFetching } = useClinicsSearch({
+    userLocation: userLocation || undefined,
+    radiusMode,
+    radiusKm,
+    types: selectedSpecialty === "all" ? undefined : [selectedSpecialty],
+    ranking: "POPULARITY",
+    maxResults: 20,
+    skipCache: radiusMode === "drag",
+  });
 
-  const handleBookAppointment = (clinic: Clinic) => {
+  const normalizedClinics: NormalizedClinic[] = clinicsData?.normalized || [];
+  const activeClinic: NormalizedClinic | null = useMemo(
+    () => normalizedClinics.find((c) => String(c.id) === String(activeClinicId)) || null,
+    [normalizedClinics, activeClinicId]
+  );
+  const hasUserLocation = !!userLocation;
+
+  // Directions
+  const [routeDestination, setRouteDestination] = useState<{ lat: number; lng: number } | null>(null);
+  const directionsEnabled = !!(userLocation && routeDestination);
+  const { data: directions } = useDirections({
+    origin: userLocation || undefined,
+    destination: routeDestination || undefined,
+    enabled: directionsEnabled,
+  });
+
+  // Fit bounds when directions arrive
+  const onMapReady = useCallback((ctx: { fitBounds: (b: any, p?: number) => void }) => {
+    if (directions && userLocation && routeDestination) {
+      const north = Math.max(userLocation.lat, routeDestination.lat);
+      const south = Math.min(userLocation.lat, routeDestination.lat);
+      const east = Math.max(userLocation.lng, routeDestination.lng);
+      const west = Math.min(userLocation.lng, routeDestination.lng);
+      ctx.fitBounds({ north, south, east, west }, 64);
+    }
+  }, [directions, userLocation, routeDestination]);
+
+  // Use my location
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by this browser.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const loc = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setUserLocation(loc);
+        // In drag mode, reverse geocode for address display
+        if (radiusMode === "drag") {
+          reverseGeocode(loc).catch(() => {});
+        }
+      },
+      () => {
+        alert("Could not get your location. Please enable location services.");
+      }
+    );
+  };
+
+  // Forward geocode a typed address/location
+  const handleSearch = async () => {
+    if (!locationQuery.trim()) return;
+    try {
+      const res = await geocodeAddress(locationQuery.trim());
+      setUserLocation({ lat: res.lat, lng: res.lng });
+    } catch (err) {
+      // toast/error already logged
+    }
+  };
+
+  // Handle selecting a clinic for directions
+  const handleGetDirections = (clinic: NormalizedClinic) => {
+    if (!userLocation) {
+      alert("Please set your location first.");
+      return;
+    }
+    setActiveClinicId(clinic.id);
+    setRouteDestination(clinic.position);
+  };
+
+  // Handle booking appointment
+  const handleBookAppointment = (clinic: NormalizedClinic) => {
     setSelectedClinic(clinic);
     setBookingDate(undefined);
     setBookingTime("");
     setBookingDialogOpen(true);
   };
 
-  const handleViewDetails = (clinic: Clinic) => {
+  // Handle view details
+  const handleViewDetails = (clinic: NormalizedClinic) => {
     setDetailsClinic(clinic);
     setDetailsDialogOpen(true);
-  };
-
-  const handleCall = (clinic: Clinic) => {
-    if (clinic.contact) {
-      window.location.href = `tel:${clinic.contact}`;
-    } else {
-      toast({
-        title: "Contact not available",
-        description: "This clinic doesn't have a phone number listed.",
-        variant: "destructive",
-      });
-    }
   };
 
   const handleBookingSubmit = async () => {
@@ -113,7 +203,7 @@ const FindClinics = () => {
     try {
       setBookingLoading(true);
       const appointmentData = {
-        clinic_id: selectedClinic.clinic_id,
+        place_id: selectedClinic.placeId || selectedClinic.id,
         date: format(bookingDate, "yyyy-MM-dd"),
         time: bookingTime,
         status: "pending" as const,
@@ -149,6 +239,141 @@ const FindClinics = () => {
     "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
     "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"
   ];
+
+  const userMarker = useMemo(() => {
+    if (!userLocation) return null;
+    return (
+      <AdvancedMarker position={userLocation}>
+        <PinMarker color="#F44336" selected />
+      </AdvancedMarker>
+    );
+  }, [userLocation]);
+
+  const clinicsMarkers = useMemo(() => {
+    return normalizedClinics.map((c) => (
+      <AdvancedMarker
+        key={String(c.id)}
+        position={c.position}
+        title={c.name}
+        onClick={() => {
+          setActiveClinicId(c.id);
+          // Default to UI Kit compact view first, per request
+          setShowCompactInfo(true);
+        }}
+      >
+        <PinMarker
+          color={activeClinicId === c.id ? "#059669" : "#10B981"}
+          selected={activeClinicId === c.id}
+        />
+      </AdvancedMarker>
+    ));
+  }, [normalizedClinics, activeClinicId]);
+
+  // Native polyline overlay using Google Maps JS API since Polyline component is unavailable in our version
+  const RoutePolyline = ({ path }: { path: { lat: number; lng: number }[] }) => {
+    const map = useMap();
+    useEffect(() => {
+      if (!map || !path || path.length === 0 || !(window as any).google) return;
+      const polyline = new (window as any).google.maps.Polyline({
+        path,
+        strokeColor: '#FB923C',
+        strokeOpacity: 1,
+        strokeWeight: 5,
+        map,
+      });
+      return () => {
+        polyline.setMap(null);
+      };
+    }, [map, path]);
+    return null;
+  };
+
+  // Drag-mode user marker + editable radius circle overlay
+  const UserDragRadius = ({
+    center,
+    radiusKm,
+    onCenterChange,
+    onRadiusKmChange,
+    onReverseGeocode,
+  }: {
+    center: { lat: number; lng: number };
+    radiusKm: number;
+    onCenterChange: (c: { lat: number; lng: number }) => void;
+    onRadiusKmChange: (km: number) => void;
+    onReverseGeocode?: (c: { lat: number; lng: number }) => void;
+  }) => {
+    const map = useMap();
+    useEffect(() => {
+      if (!map || !(window as any).google) return;
+
+      const g = (window as any).google;
+      // Create draggable marker (classic marker works without extra libraries)
+      const marker = new g.maps.Marker({
+        position: center,
+        draggable: true,
+        map,
+        title: 'Drag to adjust your location',
+      });
+
+      // Editable circle for radius
+      const circle = new g.maps.Circle({
+        center,
+        radius: Math.max(0.1, radiusKm) * 1000,
+        editable: true,
+        strokeColor: '#22c55e',
+        strokeOpacity: 0.9,
+        strokeWeight: 2,
+        fillColor: '#22c55e',
+        fillOpacity: 0.15,
+        map,
+      });
+
+      // Keep marker on circle center
+      circle.bindTo('center', marker, 'position');
+
+      let debounceTimer: any = null;
+      const DEBOUNCE_MS = 350;
+
+      const emitCenterChanged = () => {
+        const pos = marker.getPosition();
+        if (!pos) return;
+        const next = { lat: pos.lat(), lng: pos.lng() };
+        onCenterChange(next);
+        if (onReverseGeocode) {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => onReverseGeocode(next), DEBOUNCE_MS);
+        }
+      };
+
+      const emitRadiusChanged = () => {
+        const rMeters = circle.getRadius();
+        if (typeof rMeters === 'number') {
+          const km = Math.max(0.1, rMeters / 1000);
+          onRadiusKmChange(Math.round(km * 10) / 10);
+        }
+      };
+
+      const markerDragEnd = g.maps.event.addListener(marker, 'dragend', emitCenterChanged);
+      const circleCenterChanged = g.maps.event.addListener(circle, 'center_changed', emitCenterChanged);
+      const circleRadiusChanged = g.maps.event.addListener(circle, 'radius_changed', emitRadiusChanged);
+
+      // Sync external prop changes
+      circle.setCenter(center);
+      circle.setRadius(Math.max(0.1, radiusKm) * 1000);
+      marker.setPosition(center);
+
+      return () => {
+        if (debounceTimer) clearTimeout(debounceTimer);
+        g.maps.event.removeListener(markerDragEnd);
+        g.maps.event.removeListener(circleCenterChanged);
+        g.maps.event.removeListener(circleRadiusChanged);
+        marker.setMap(null);
+        circle.setMap(null);
+      };
+    }, [map, center.lat, center.lng, radiusKm]);
+
+    return null;
+  };
 
   return (
     <div className="min-h-full bg-muted/20">
@@ -191,12 +416,12 @@ const FindClinics = () => {
                     }}
                   />
                 </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button onClick={handleSearch} size="sm">
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={handleSearch} size="sm" className="flex-1 min-w-0">
                     <Search className="h-4 w-4 mr-2" />
                     Search
                   </Button>
-                  <Button onClick={handleUseMyLocation} variant="outline" size="sm">
+                  <Button onClick={handleUseMyLocation} variant="outline" size="sm" className="flex-1 min-w-0">
                     <Navigation className="h-4 w-4 mr-2" />
                     My Location
                   </Button>
@@ -209,6 +434,7 @@ const FindClinics = () => {
                     variant="ghost"
                     size="sm"
                     disabled={!userLocation}
+                    className="flex-1 min-w-0"
                   >
                     Reverse Geocode
                   </Button>
@@ -334,28 +560,28 @@ const FindClinics = () => {
               {normalizedClinics.map((clinic) => (
                 <div
                   key={String(clinic.id)}
-                  className="bg-card rounded-xl p-6 shadow-soft border border-border flex gap-4 items-start"
+                  className="bg-card rounded-xl p-4 md:p-6 shadow-soft border border-border flex flex-col md:flex-row gap-4 items-start"
                 >
                   {/* Left icon / avatar box */}
-                  <div className="flex-shrink-0 rounded-lg w-20 h-20 bg-primary/10 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-md bg-primary flex items-center justify-center text-white">
-                      <MapPin className="h-6 w-6" />
+                  <div className="flex-shrink-0 rounded-lg w-16 h-16 md:w-20 md:h-20 bg-primary/10 flex items-center justify-center">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-md bg-primary flex items-center justify-center text-white">
+                      <MapPin className="h-5 w-5 md:h-6 md:w-6" />
                     </div>
                   </div>
 
                   {/* Main content */}
-                  <div className="flex-1">
-                    <div className="flex items-start justify-between">
-                      <div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                      <div className="min-w-0 flex-1">
                         <h3 className="font-semibold text-lg">{clinic.name}</h3>
                         <div className="flex items-center text-sm text-muted-foreground mt-1">
-                          <MapPin className="h-4 w-4 mr-2" />
+                          <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span className="truncate">
                             {clinic.raw?.address || clinic.raw?.formattedAddress || "Address unavailable"}
                           </span>
                           {/* distance (approx) */}
                           {clinic.position && userLocation && (
-                            <span className="ml-3 text-muted-foreground">
+                            <span className="ml-3 text-muted-foreground flex-shrink-0">
                               •{" "}
                               {computeDistanceKm(
                                 userLocation.lat,
@@ -369,7 +595,7 @@ const FindClinics = () => {
                         </div>
                       </div>
 
-                      <div className="text-sm text-right">
+                      <div className="text-sm text-left md:text-right flex-shrink-0">
                         {clinic.raw?.is_active !== false ? (
                           <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs">
                             Available
@@ -382,9 +608,9 @@ const FindClinics = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-4 mt-4">
+                    <div className="flex flex-col md:flex-row md:items-center gap-4 mt-4">
                       <div className="flex items-center text-sm text-muted-foreground">
-                        <Star className="h-4 w-4 mr-2 text-amber-500" />
+                        <Star className="h-4 w-4 mr-2 text-amber-500 flex-shrink-0" />
                         <span className="font-medium">
                           {typeof clinic.rating === "number" ? clinic.rating.toFixed(1) : "N/A"}
                         </span>
@@ -393,13 +619,13 @@ const FindClinics = () => {
                         </span>
                       </div>
 
-                      <div className="px-3 py-1 rounded-full bg-muted/50 text-sm">
+                      <div className="px-3 py-1 rounded-full bg-muted/50 text-sm self-start">
                         {clinic.raw?.category || clinic.raw?.types?.[0] || "General"}
                       </div>
 
                       {(clinic.distanceText || clinic.durationText) && (
                         <div className="text-sm text-muted-foreground flex items-center">
-                          <Clock className="h-4 w-4 mr-2" />
+                          <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
                           <span>
                             {clinic.distanceText || "--"} • {clinic.durationText || "--"}
                           </span>
@@ -407,30 +633,52 @@ const FindClinics = () => {
                       )}
                     </div>
 
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          variant="hero"
-                          size="sm"
-                          onClick={() => handleBookAppointment(clinic)}
-                        >
-                          Book Appointment
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetails(clinic)}
-                        >
-                          View Details
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCall(clinic)}
-                        >
-                          <Phone className="h-4 w-4 mr-2" />
-                          Call
-                        </Button>
-                      </div>
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-4">
+                      <Button
+                        size="sm"
+                        className="bg-emerald-500 hover:bg-emerald-600 flex-1 md:flex-none"
+                        onClick={() => handleBookAppointment(clinic)}
+                      >
+                        Book Appointment
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 md:flex-none"
+                        onClick={() => handleViewDetails(clinic)}
+                      >
+                        View Details
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex-1 md:flex-none"
+                        onClick={() => {
+                          const phone = clinic.raw?.contact || clinic.phone;
+                          if (phone) {
+                            window.open(`tel:${phone}`);
+                          } else {
+                            toast({
+                              title: "Contact not available",
+                              description: "This clinic doesn't have a phone number listed.",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        <Phone className="h-4 w-4 mr-2" />
+                        Call
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 md:flex-none"
+                        onClick={() => handleGetDirections(clinic)}
+                        disabled={!userLocation}
+                      >
+                        <Route className="h-4 w-4 mr-2" />
+                        Get Directions
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -533,23 +781,20 @@ const FindClinics = () => {
               Clinic details and information
             </DialogDescription>
           </DialogHeader>
-
           {detailsClinic && (
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Address</label>
                 <p className="text-sm text-muted-foreground">
-                  {detailsClinic.address || 'Address not provided'}
+                  {detailsClinic.raw?.address || detailsClinic.raw?.formattedAddress || 'Address not provided'}
                 </p>
               </div>
-
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Contact</label>
                 <p className="text-sm text-muted-foreground">
-                  {detailsClinic.contact || 'Contact information not available'}
+                  {detailsClinic.raw?.contact || 'Contact information not available'}
                 </p>
               </div>
-
               <div className="grid gap-2">
                 <label className="text-sm font-medium">Rating</label>
                 <div className="flex items-center gap-2">
@@ -559,16 +804,8 @@ const FindClinics = () => {
                   </span>
                 </div>
               </div>
-
-              <div className="grid gap-2">
-                <label className="text-sm font-medium">Consultation Fee</label>
-                <p className="text-sm text-muted-foreground">
-                  {typeof detailsClinic.consultation_fee === 'number' ? `$${detailsClinic.consultation_fee}` : 'Not specified'}
-                </p>
-              </div>
             </div>
           )}
-
           <DialogFooter>
             <Button
               variant="outline"

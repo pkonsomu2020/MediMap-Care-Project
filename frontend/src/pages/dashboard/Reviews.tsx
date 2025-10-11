@@ -186,7 +186,7 @@ const Reviews = () => {
             {/* Clinic Selector */}
             <div className="bg-card rounded-xl p-6 shadow-soft border border-border">
               <Label className="text-base font-semibold">Select Clinic to View Reviews</Label>
-              <Select value={selectedClinicId?.toString()} onValueChange={(value) => setSelectedClinicId(parseInt(value))}>
+              <Select value={selectedClinicId ? selectedClinicId.toString() : ""} onValueChange={(value) => setSelectedClinicId(parseInt(value))}>
                 <SelectTrigger className="mt-2">
                   <SelectValue placeholder="Select a clinic" />
                 </SelectTrigger>
