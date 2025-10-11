@@ -28,6 +28,8 @@
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
     "nodemailer": "^6.9.7",
+    "retry-axios": "^3.2.1",
+    "split-on-first": "^4.0.0",
     "twilio": "^4.19.0",
     "zod": "^4.1.12"
   },
