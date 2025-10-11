@@ -1,4 +1,4 @@
-import Clinic from '../models/clinic';
+import {Clinic} from '../models/models';
 
 export function toClinicDTO(c: Clinic) {
   return {

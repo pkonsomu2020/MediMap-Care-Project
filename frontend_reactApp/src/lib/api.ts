@@ -116,6 +116,20 @@ export const api = {
     return request<any>(`/users/me`);
   },
 
+  async updateCurrentUser(updates: {
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    phone?: string;
+    date_of_birth?: string;
+    [key: string]: any;
+  }) {
+    return request<any>(`/users/me`, {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    });
+  },
+
   // --- Clinics ---
   async listClinics(params?: { q?: string; min_rating?: number }) {
     const usp = new URLSearchParams();

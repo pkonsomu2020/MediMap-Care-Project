@@ -8,7 +8,6 @@ import {
   TextInput,
   Alert,
   StyleSheet,
-  SafeAreaView,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
@@ -25,6 +24,7 @@ import {
 } from "lucide-react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from '@react-navigation/stack';
+import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../lib/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -72,7 +72,6 @@ export default function Appointments() {
     try {
       setError(null);
       const data = await api.listAppointments();
-      console.log(data)
       setAppointments(data);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to load appointments";

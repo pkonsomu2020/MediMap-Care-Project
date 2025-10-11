@@ -39,5 +39,24 @@ export async function getById(userId: number) {
   return data || null;
 }
 
+export async function updateUserDb(
+  userId: string | number,
+  updates: Record<string, any>
+) {
+  const { data, error } = await serviceClient!
+    .from("users")
+    .update({
+      ...updates,
+      profile_updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .select(
+      "user_id, first_name, last_name, email, phone, gender, date_of_birth, address, latitude, longitude, place_id, blood_type, allergies, medications, medical_conditions, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship, profile_picture_url, is_completed, role"
+    )
+    .single();
+
+  if (error) throw error;
+  return data;
+}
 
 

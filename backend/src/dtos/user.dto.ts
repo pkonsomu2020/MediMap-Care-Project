@@ -1,4 +1,4 @@
-import User from '../models/user';
+import {User} from '../models/models';
 
 export function toUserDTO(u: User) {
   return {

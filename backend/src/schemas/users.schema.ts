@@ -13,4 +13,12 @@ export const LoginInput = z.object({
   password: z.string().min(6),
 });
 
-
+export const UserUpdateInput = z.object({
+  name: z.string().min(1).optional(),
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+  emergency_contact: z.string().optional(),
+  medical_info: z.string().optional(),
+  address: z.string().optional(),
+  dob: z.string().optional(),
+});

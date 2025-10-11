@@ -2,7 +2,8 @@
 node_modules/
 
 # Build outputs
-dist/
+backend/dist/*
+dist-ssr/
 build/
 
 # Logs
