@@ -7,17 +7,28 @@ const router = Router();
 // Get all clinics with optional filters
 router.get('/', async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { q, min_rating } = req.query as { q?: string | undefined; min_rating?: string | undefined };
-    const filters: { q?: string; min_rating?: number } = {};
-    if (typeof q === 'string') filters.q = q;
-    if (typeof min_rating === 'string' && min_rating.length > 0) filters.min_rating = parseFloat(min_rating);
-    const clinics = await listClinicsDb(filters);
+    const { q, min_rating, limit, offset } = req.query as {
+      q?: string;
+      min_rating?: string;
+      limit?: string;
+      offset?: string;
+    };
 
+    const filters: { q?: string; min_rating?: number; limit?: number; offset?: number } = {};
+
+    if (q) filters.q = q;
+    if (min_rating) filters.min_rating = parseFloat(min_rating);
+    if (limit) filters.limit = parseInt(limit, 10);
+    if (offset) filters.offset = parseInt(offset, 10);
+
+    const clinics = await listClinicsDb(filters);
     return res.json(clinics);
   } catch (error) {
+    console.error("Error fetching clinics:", error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 // Get clinic by ID
 router.get('/:id', async (req: Request, res: Response): Promise<Response> => {
