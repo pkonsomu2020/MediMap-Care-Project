@@ -39,6 +39,9 @@ router.post('/login', async (req: Request, res: Response): Promise<Response> => 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+    if ((user as any).password === 'google_oauth') {
+      return res.status(401).json({ error: 'Please use Google login for this account' });
+    }
     const isMatch = await bcrypt.compare(password, (user as any).password);
     if (!isMatch) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -47,6 +50,45 @@ router.post('/login', async (req: Request, res: Response): Promise<Response> => 
       expiresIn: process.env.JWT_EXPIRES_IN || '7d',
     } as jwt.SignOptions);
     return res.json({ token, user: { user_id: (user as any).user_id, name: (user as any).name, email: user.email, phone: (user as any).phone, role: user.role } });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Google OAuth login
+router.post('/google-login', async (req: Request, res: Response): Promise<Response> => {
+  const { id_token } = req.body;
+  if (!id_token) {
+    return res.status(400).json({ error: 'ID token is required' });
+  }
+  if (!process.env.GOOGLE_CLIENT_ID) {
+    return res.status(500).json({ error: 'Google Client ID not configured' });
+  }
+  try {
+    const client = new OAuth2Client();
+    const ticket = await client.verifyIdToken({
+      idToken: id_token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    if (!payload) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
+    const { email, name } = payload;
+    if (!email || !name) {
+      return res.status(400).json({ error: 'Email and name are required from Google' });
+    }
+    let user = await findUserByEmail(email);
+    if (!user) {
+      user = await createUserDb({ name, email, phone: null, password: 'google_oauth', role: 'user' });
+    }
+    if (!user) {
+      return res.status(500).json({ error: 'Failed to create user' });
+    }
+    const token = jwt.sign({ id: user.user_id, role: user.role }, process.env.JWT_SECRET || 'secret', {
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+    } as jwt.SignOptions);
+    return res.json({ token, user: { user_id: user.user_id, name: user.name, email: user.email, phone: user.phone, role: user.role } });
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error' });
   }

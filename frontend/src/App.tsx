@@ -12,6 +12,8 @@ import Appointments from "./pages/dashboard/Appointments";
 import Directory from "./pages/dashboard/Directory";
 import Reviews from "./pages/dashboard/Reviews";
 import Profile from "./pages/dashboard/Profile";
+import ClinicProfile from "./pages/dashboard/ClinicProfile";
+import Emergency from "./pages/dashboard/Emergency";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,7 +23,12 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true
+        }}
+      >
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/login" element={<Login />} />
@@ -30,8 +37,10 @@ const App = () => (
           {/* Dashboard Routes */}
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route path="find-clinics" element={<FindClinics />} />
+            <Route path="emergency" element={<Emergency />} />
             <Route path="appointments" element={<Appointments />} />
             <Route path="directory" element={<Directory />} />
+            <Route path="clinic/:id" element={<ClinicProfile />} />
             <Route path="reviews" element={<Reviews />} />
             <Route path="profile" element={<Profile />} />
           </Route>
