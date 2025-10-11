@@ -1,9 +1,24 @@
-import { useEffect, useState } from "react";
-import { Search, MapPin, Star, Phone, Globe, Clock, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Search, MapPin, Star, Phone, Globe, Clock, Loader2, Calendar as CalendarIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 type Clinic = {
   clinic_id: number;
@@ -18,10 +33,20 @@ type Clinic = {
 };
 
 const Directory = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Booking state
+  const [bookingDialogOpen, setBookingDialogOpen] = useState(false);
+  const [selectedClinic, setSelectedClinic] = useState<Clinic | null>(null);
+  const [bookingDate, setBookingDate] = useState<Date>();
+  const [bookingTime, setBookingTime] = useState<string>("");
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   useEffect(() => {
     const loadClinics = async () => {
@@ -66,6 +91,81 @@ const Directory = () => {
         }`}
       />
     ));
+  };
+
+  const timeSlots = [
+    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00"
+  ];
+
+  const handleBookAppointment = (clinic: Clinic) => {
+    setSelectedClinic(clinic);
+    setBookingDate(undefined);
+    setBookingTime("");
+    setBookingDialogOpen(true);
+  };
+
+  const handleBookingSubmit = async () => {
+    if (!selectedClinic || !bookingDate || !bookingTime) {
+      toast({
+        title: "Missing information",
+        description: "Please select a date and time for your appointment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setBookingLoading(true);
+      const appointmentData = {
+        clinic_id: selectedClinic.clinic_id,
+        date: format(bookingDate, "yyyy-MM-dd"),
+        time: bookingTime,
+        status: "pending" as const,
+      };
+
+      await api.createAppointment(appointmentData);
+
+      toast({
+        title: "Appointment booked!",
+        description: `Your appointment at ${selectedClinic.name} has been scheduled.`,
+      });
+
+      setBookingDialogOpen(false);
+      setSelectedClinic(null);
+      setBookingDate(undefined);
+      setBookingTime("");
+    } catch (error: unknown) {
+      const err = error as Error;
+      toast({
+        title: "Booking failed",
+        description: err.message || "Failed to book appointment. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const handleViewProfile = (clinic: Clinic) => {
+    navigate(`/dashboard/clinic/${clinic.clinic_id}`);
+  };
+
+  const handleGetDirections = (clinic: Clinic) => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${clinic.latitude},${clinic.longitude}`;
+    window.open(url, '_blank');
+  };
+
+  const handleCall = (clinic: Clinic) => {
+    if (clinic.contact) {
+      window.open(`tel:${clinic.contact}`);
+    } else {
+      toast({
+        title: "Contact not available",
+        description: "This clinic doesn't have a phone number listed.",
+        variant: "destructive",
+      });
+    }
   };
   return (
     <div className="min-h-full bg-muted/20">
@@ -185,13 +285,19 @@ const Directory = () => {
                       )}
 
                       <div className="flex flex-wrap gap-2">
-                        <Button variant="hero" size="sm">
+                        <Button variant="hero" size="sm" onClick={() => handleBookAppointment(clinic)}>
                           Book Appointment
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewProfile(clinic)}>
                           View Profile
                         </Button>
-                        <Button variant="ghost" size="sm">
+                        {clinic.contact && (
+                          <Button variant="ghost" size="sm" onClick={() => handleCall(clinic)}>
+                            <Phone className="h-4 w-4 mr-2" />
+                            Call
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => handleGetDirections(clinic)}>
                           Get Directions
                         </Button>
                       </div>
@@ -203,6 +309,79 @@ const Directory = () => {
           </div>
         )}
       </div>
+
+      {/* Booking Dialog */}
+      <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Book Appointment</DialogTitle>
+            <DialogDescription>
+              Schedule an appointment at {selectedClinic?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Select Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !bookingDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {bookingDate ? format(bookingDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={bookingDate}
+                    onSelect={setBookingDate}
+                    disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Select Time</label>
+              <Select value={bookingTime} onValueChange={setBookingTime}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a time slot" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeSlots.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setBookingDialogOpen(false)}
+              disabled={bookingLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBookingSubmit}
+              disabled={bookingLoading || !bookingDate || !bookingTime}
+            >
+              {bookingLoading ? "Booking..." : "Book Appointment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

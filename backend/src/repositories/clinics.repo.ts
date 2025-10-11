@@ -56,5 +56,36 @@ export async function createClinic(payload: {
   return data;
 }
 
+export async function upsertClinics(
+  clinics: {
+    name: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+    rating: number;
+    google_place_id: string;
+  }[]
+) {
+  if (!serviceClient) throw new Error('Supabase not configured');
+
+  const { data, error } = await serviceClient
+    .from('clinics')
+    .upsert(
+      clinics.map((clinic) => ({
+        name: clinic.name,
+        address: clinic.address,
+        latitude: clinic.latitude,
+        longitude: clinic.longitude,
+        rating: clinic.rating,
+        google_place_id: clinic.google_place_id,
+      })),
+      { onConflict: 'google_place_id' }
+    )
+    .select();
+
+  if (error) throw error;
+  return data;
+}
+
 
 

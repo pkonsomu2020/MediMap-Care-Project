@@ -3,12 +3,11 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import path from 'path';
 import { buildCors } from './config/cors';
 
-// Load environment variables
-dotenv.config();
-
 const app = express();
+app.set('etag', false);
 
 // Middleware
 app.use(helmet());
@@ -20,8 +19,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 import indexRouter from './routes/index';
+import directionsRouter from './routes/directions';
 
 app.use('/api', indexRouter);
+app.use('/api/directions', directionsRouter);
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

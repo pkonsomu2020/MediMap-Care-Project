@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createAppointmentDb, deleteAppointmentDb, getAppointmentDb, listAppointmentsByUserDb, updateAppointmentDb, getClinicDb } from '../lib/data';
+import { createAppointmentDb, deleteAppointmentDb, getAppointmentDb, listAppointmentsByUserDb, updateAppointmentDb, getClinicDb, getClinicByGooglePlaceId } from '../lib/data';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
@@ -38,16 +38,25 @@ router.get('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
 
 // Create new appointment
 router.post('/', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
-  const { clinic_id, date, time, status } = req.body;
+  const { place_id, clinic_id, date, time, status } = req.body;
 
-  if (!clinic_id || !date || !time) {
-    return res.status(400).json({ error: 'clinic_id, date and time are required' });
+  if ((!place_id && !clinic_id) || !date || !time) {
+    return res.status(400).json({ error: 'Either place_id or clinic_id, date and time are required' });
   }
 
   try {
-    const clinic = await getClinicDb(Number(clinic_id));
-    if (!clinic) return res.status(400).json({ error: 'Invalid clinic_id' });
-    const appointment = await createAppointmentDb({ user_id: req.auth!.userId, clinic_id, date, time, status });
+    let clinicId: number;
+    if (place_id) {
+      const clinic = await getClinicByGooglePlaceId(place_id);
+      if (!clinic) return res.status(400).json({ error: 'Clinic not found. Please search for clinics again.' });
+      clinicId = clinic.clinic_id;
+    } else {
+      // clinic_id provided directly
+      const clinic = await getClinicDb(Number(clinic_id));
+      if (!clinic) return res.status(400).json({ error: 'Invalid clinic_id' });
+      clinicId = clinic.clinic_id;
+    }
+    const appointment = await createAppointmentDb({ user_id: req.auth!.userId, clinic_id: clinicId, date, time, status });
     return res.status(201).json(appointment);
   } catch (error) {
     return res.status(500).json({ error: 'Internal server error' });
@@ -68,12 +77,18 @@ router.put('/:id', authMiddleware, async (req: AuthenticatedRequest, res: Respon
     }
 
     const allowed: any = {};
-    if (req.body.status) allowed.status = req.body.status;
+    if (req.body.status) {
+      console.log('Updating status to:', req.body.status);
+      allowed.status = req.body.status;
+    }
     if (req.body.date) allowed.date = req.body.date;
     if (req.body.time) allowed.time = req.body.time;
+    console.log('Updating appointment', appointmentId, 'with changes:', allowed);
     const updated = await updateAppointmentDb(appointmentId, allowed);
+    console.log('Update result:', updated);
     return res.json(updated);
   } catch (error) {
+    console.error('Error updating appointment:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });

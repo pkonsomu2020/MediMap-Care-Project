@@ -17,7 +17,7 @@ To revolutionize healthcare access by providing a seamless digital platform that
 
 ### **Our Solution**
 A comprehensive digital health platform featuring:
-- 🗺️ **Interactive Maps** with real-time clinic locations
+- 🗺️ **Interactive Maps** with real-time clinic locations using Google Maps
 - 📅 **Instant Appointment Booking** with confirmation notifications
 - ⭐ **Verified Reviews** and ratings system
 - 🔍 **Advanced Search** by specialty, location, and availability
@@ -27,7 +27,7 @@ A comprehensive digital health platform featuring:
 
 ### **🗺️ Location-Based Discovery**
 - **Real-time Geolocation**: Automatic detection of user location
-- **Interactive Maps**: OpenStreetMap integration with custom styling
+- **Interactive Maps**: Google Maps integration with custom styling
 - **Radius Search**: Find clinics within specified distance
 - **Kenya Coverage**: Comprehensive coverage of major cities and towns
 
@@ -63,21 +63,22 @@ A comprehensive digital health platform featuring:
 - **Vite** - Lightning-fast build tool
 - **Tailwind CSS** - Utility-first styling
 - **shadcn/ui** - Accessible component library
+- **@vis.gl/react-google-maps** - Google Maps React integration
 
 ### **Backend**
 - **Node.js** - JavaScript runtime
 - **Express.js** - Web application framework
 - **TypeScript** - Type-safe backend development
-- **PostgreSQL** - Relational database
-- **Sequelize** - ORM for database operations
+- **Supabase** - PostgreSQL database and backend services
 - **JWT** - Authentication tokens
 - **bcrypt** - Password hashing
+- **Google Maps Services** - Places API integration
 
 ### **Mapping & Location**
-- **Leaflet.js** - Interactive mapping library
-- **OpenStreetMap** - Free, open-source map tiles
-- **React Leaflet** - React integration for maps
+- **Google Maps JavaScript API** - Interactive mapping
+- **Google Places API** - Clinic data and search
 - **HTML5 Geolocation** - User location detection
+- **Google Maps URL Scheme** - Navigation integration
 
 ### **State Management**
 - **TanStack Query** - Server state management
@@ -108,9 +109,9 @@ medimap-care/
 │   │   │   ├── Landing.tsx # Homepage
 │   │   │   ├── Login.tsx   # Authentication
 │   │   │   └── Signup.tsx  # User registration
-│   │   ├── services/      # API and utility services
 │   │   ├── hooks/         # Custom React hooks
 │   │   ├── lib/           # Utility functions
+│   │   ├── config/        # Configuration files
 │   │   └── types/         # TypeScript type definitions
 │   ├── public/            # Static assets
 │   ├── package.json       # Frontend dependencies
@@ -118,12 +119,18 @@ medimap-care/
 ├── backend/               # Express TypeScript backend
 │   ├── src/
 │   │   ├── routes/        # API route handlers
-│   │   ├── models/        # Database models
-│   │   ├── controllers/   # Business logic
+│   │   ├── services/      # Business logic services
+│   │   ├── config/        # Configuration (Supabase, env)
 │   │   ├── middleware/    # Express middleware
+│   │   ├── lib/           # Utility functions
 │   │   └── app.ts         # Main application setup
+│   ├── migrations/        # Database migrations
+│   ├── seeding_scripts/   # Data seeding scripts
 │   ├── package.json       # Backend dependencies
 │   └── tsconfig.json      # TypeScript configuration
+├── docs/                  # Documentation
+│   ├── GAPS/              # Known gaps and risks
+│   └── ...
 ├── shared/                # Shared types and interfaces
 ├── package.json           # Root workspace configuration
 └── README.md              # Project documentation
@@ -133,9 +140,9 @@ medimap-care/
 
 ### **Prerequisites**
 - Node.js 18+ and npm
-- PostgreSQL database (local or cloud)
+- Supabase account and project
+- Google Cloud Platform account with Maps API enabled
 - Modern web browser with geolocation support
-- Internet connection for map tiles
 
 ### **Installation**
 
@@ -149,9 +156,7 @@ cd medimap-care
 # Install all dependencies (frontend, backend, root)
 npm install
 
-# Set up environment variables
-cp backend/.env.example backend/.env
-# Edit backend/.env with your database URL and JWT secret
+# Set up environment variables (see Environment Setup below)
 
 # Start both frontend and backend in development
 npm run dev
@@ -163,32 +168,60 @@ npm run dev:backend   # Backend only
 
 ### **Environment Setup**
 
+#### **Backend (.env)**
 Create `backend/.env` file:
 ```env
 NODE_ENV=development
 PORT=8001
-DATABASE_URL=postgresql://username:password@localhost:5432/medimap_dev
+CORS_ORIGIN=http://localhost:3000
+
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Authentication
 JWT_SECRET=your-super-secret-jwt-key
 JWT_EXPIRES_IN=7d
+
+# Google Maps API
+GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+
+# Email (optional)
 EMAIL_USER=your-email@gmail.com
 EMAIL_PASS=your-email-password
+
+# SMS (optional)
 TWILIO_SID=your-twilio-sid
 TWILIO_AUTH_TOKEN=your-twilio-token
 TWILIO_PHONE_NUMBER=+1234567890
 ```
 
-### **Database Setup**
-
-```bash
-# Navigate to backend
-cd backend
-
-# Run database migrations
-npm run migrate
-
-# Seed initial data (optional)
-npm run seed
+#### **Frontend (.env)**
+Create `frontend/.env` file:
+```env
+VITE_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+VITE_GOOGLE_MAPS_MAP_ID=your-map-id
+VITE_API_BASE_URL=http://localhost:8001/api
 ```
+
+### **Supabase Setup**
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com)
+2. **Get your project URL and keys** from the project settings
+3. **Run database migrations** (if any) in the Supabase SQL editor
+4. **Set up authentication** (optional, for user management)
+
+### **Google Maps Setup**
+
+1. **Create a Google Cloud Project** at [console.cloud.google.com](https://console.cloud.google.com)
+2. **Enable the following APIs**:
+   - Maps JavaScript API
+   - Places API
+   - Geocoding API
+   - Directions API
+3. **Create an API key** and restrict it to your domain
+4. **Add the API key** to both backend and frontend .env files
 
 ### **Development Commands**
 
@@ -196,16 +229,17 @@ npm run seed
 # Root level commands (run both services)
 npm run dev              # Start frontend and backend concurrently
 npm run build            # Build both frontend and backend
+npm run start            # Start both in production mode
 npm run lint             # Lint both projects
 
 # Frontend commands
-npm run dev:frontend     # Start frontend only
+npm run dev:frontend     # Start frontend only (port 3000)
 cd frontend && npm run dev
 cd frontend && npm run build
-cd frontend && npm run lint
+cd frontend && npm run preview
 
 # Backend commands
-npm run dev:backend      # Start backend only
+npm run dev:backend      # Start backend only (port 8001)
 cd backend && npm run dev
 cd backend && npm run build
 cd backend && npm run test
@@ -267,7 +301,9 @@ cd backend && npm run test
 ```env
 VITE_APP_NAME=MediMap Care
 VITE_APP_URL=https://medimapcare.com
-VITE_MAP_TILE_URL=https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+VITE_GOOGLE_MAPS_API_KEY=your-production-api-key
+VITE_GOOGLE_MAPS_MAP_ID=your-production-map-id
+VITE_API_BASE_URL=https://your-api-domain.com/api
 ```
 
 ## 🤝 **Contributing**
@@ -291,8 +327,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 **Acknowledgments**
 
-- **OpenStreetMap** community for free map data
-- **Leaflet.js** team for the mapping library
+- **Google Maps Platform** for mapping and location services
+- **Supabase** for database and backend services
 - **Kenya Health Information System** for healthcare data
 - **React** and **Vite** communities for excellent tooling
 

@@ -13,5 +13,9 @@
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@googlemaps/js-api-loader": "^2.0.1",
+    "@types/google.maps": "^3.58.1"
   }
 }

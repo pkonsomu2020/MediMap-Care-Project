@@ -1,15 +1,27 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
 import { z } from 'zod';
+
+// Explicitly load .env from the 'backend' directory
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.string().default('8001'),
   CORS_ORIGIN: z.string().optional(),
-  SUPABASE_URL: z.string().url().optional(),
+  // Required for backend operation
+  SUPABASE_URL: z.string().url({
+    message: 'SUPABASE_URL is required and must be a valid URL',
+  }),
   SUPABASE_ANON_KEY: z.string().optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string({
+    required_error: 'SUPABASE_SERVICE_ROLE_KEY is required',
+  }),
   JWT_SECRET: z.string().optional(),
   JWT_EXPIRES_IN: z.string().optional(),
+  GOOGLE_MAPS_API_KEY: z.string({
+    required_error: 'GOOGLE_MAPS_API_KEY is required',
+  }),
 });
 
 const parsed = envSchema.safeParse(process.env);
