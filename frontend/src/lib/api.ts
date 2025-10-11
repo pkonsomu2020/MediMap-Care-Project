@@ -83,19 +83,13 @@ export const api = {
     });
   },
   googleLogin(payload: { id_token: string }) {
-    return request<{ token: string; user: any }>(`/users/google-login`, {
+    return request<{ token: string; user: User }>(`/users/google-login`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   },
   register(payload: { name: string; email: string; phone?: string; password: string; role?: 'user' | 'clinic' | 'admin' }) {
     return request<{ token: string; user: User }>(`/users/register`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
-  },
-  googleLogin(payload: { id_token: string }) {
-    return request<{ token: string; user: User }>(`/users/google-login`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -115,12 +109,15 @@ export const api = {
   getClinic(id: number) {
     return request<Clinic>(`/clinics/${id}`);
   },
+  getClinicByPlaceId(placeId: string) {
+    return request<Clinic>(`/clinics/place/${placeId}`);
+  },
 
   // Appointments
   listAppointments() {
     return request<Appointment[]>(`/appointments`);
   },
-  createAppointment(payload: { clinic_id: number; date: string; time: string; status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' }) {
+  createAppointment(payload: { place_id?: string; clinic_id?: number; date: string; time: string; status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' }) {
     return request<Appointment>(`/appointments`, { method: 'POST', body: JSON.stringify(payload) });
   },
   updateAppointment(id: number, changes: Partial<{ status: 'pending' | 'confirmed' | 'cancelled' | 'completed'; date: string; time: string }>) {

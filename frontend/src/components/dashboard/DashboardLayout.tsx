@@ -11,10 +11,17 @@ import {
   LogOut,
   Bell,
   Siren,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { api } from "@/lib/api";
+import { format } from "date-fns";
 import { APIProvider } from "@vis.gl/react-google-maps";
 import { config } from "@/config/environment";
 
@@ -26,11 +33,70 @@ type User = {
   role: string;
 };
 
+type Notification = {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  unread: boolean;
+};
+
+type Appointment = {
+  appointment_id: number;
+  date: string;
+  time: string;
+  status: string;
+  clinic_name?: string;
+};
+
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [userLoading, setUserLoading] = useState(true);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    const loadNotifications = async () => {
+      if (!user) return;
+
+      try {
+        setNotificationsLoading(true);
+        // Fetch user's appointments to generate notifications
+        const appointments = await api.listAppointments?.() || [];
+        
+        const now = new Date();
+        const upcomingAppointments = appointments.filter((apt: Appointment) => {
+          const aptDateTime = new Date(`${apt.date}T${apt.time}:00`);
+          return aptDateTime > now && apt.status === 'pending';
+        });
+
+        const realNotifications: Notification[] = upcomingAppointments.map((apt: Appointment) => ({
+          id: apt.appointment_id,
+          title: "Appointment Reminder",
+          message: `Your appointment at ${apt.clinic_name || 'the clinic'} on ${format(new Date(apt.date), 'MMM dd')} at ${apt.time}`,
+          time: format(new Date(apt.date), 'MMM dd, yyyy'),
+          unread: true,
+        }));
+
+        setNotifications(realNotifications);
+      } catch (error) {
+        console.error('Failed to load notifications:', error);
+        // Fallback to empty array or handle error
+        setNotifications([]);
+      } finally {
+        setNotificationsLoading(false);
+      }
+    };
+
+    loadNotifications();
+  }, [user]);
+
+  const handleMarkAllRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
+  };
 
   const navItems = [
     { name: "Find Clinics", path: "/dashboard/find-clinics", icon: Map },
@@ -163,10 +229,62 @@ const DashboardLayout = () => {
             <div className="flex-1 lg:flex-none"></div>
 
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
-              </Button>
+              <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {notifications.some(n => n.unread) && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold">Notifications</h4>
+                      <Button variant="ghost" size="sm" onClick={handleMarkAllRead}>
+                        Mark all read
+                      </Button>
+                    </div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {notificationsLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          <span className="text-sm text-muted-foreground">Loading...</span>
+                        </div>
+                      ) : notifications.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          No new notifications
+                        </p>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            className={`p-3 rounded-lg border cursor-pointer hover:bg-accent/5 ${
+                              notification.unread ? "bg-accent/10 border-accent" : "bg-muted/50"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h5 className="font-medium text-sm">{notification.title}</h5>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {notification.message}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  {notification.time}
+                                </p>
+                              </div>
+                              {notification.unread && (
+                                <div className="w-2 h-2 bg-accent rounded-full mt-2 flex-shrink-0"></div>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
 
               <div className="flex items-center gap-3">
                 <Link to="/dashboard/profile">

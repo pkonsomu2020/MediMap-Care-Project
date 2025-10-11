@@ -47,6 +47,17 @@ export async function listClinicsDb(filters: { q?: string; min_rating?: number }
 export async function getClinicDb(id: number) {
   const { data, error } = await serviceClient!.from('clinics')
     .select('clinic_id, name, address, latitude, longitude, services, consultation_fee, contact, rating')
+    .eq('clinic_id', id)
+    .maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+export async function getClinicByGooglePlaceId(googlePlaceId: string) {
+  const { data, error } = await serviceClient!.from('clinics')
+    .select('clinic_id, name, address, latitude, longitude, services, consultation_fee, contact, rating')
+    .eq('google_place_id', googlePlaceId)
+    .maybeSingle();
   if (error) throw error;
   return data || null;
 }

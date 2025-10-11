@@ -54,3 +54,4 @@ coverage/
 *.sqlite3
 
 TODO.md
+frontend/.env

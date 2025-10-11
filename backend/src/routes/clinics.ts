@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { createClinicDb, getClinicDb, listClinicsDb, updateClinicDb, deleteClinicDb } from '../lib/data';
+import { createClinicDb, getClinicDb, listClinicsDb, updateClinicDb, deleteClinicDb, getClinicByGooglePlaceId } from '../lib/data';
 import { googlePlacesService } from '../services/googlePlaces';
 
 const router = Router();
@@ -24,6 +24,25 @@ router.get('/:id', async (req: Request, res: Response): Promise<Response> => {
   try {
     const id = Number(req.params.id);
     const clinic = await getClinicDb(id);
+
+    if (!clinic) {
+      return res.status(404).json({ error: 'Clinic not found' });
+    }
+
+    return res.json(clinic);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get clinic by place ID
+router.get('/place/:placeId', async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { placeId } = req.params;
+    if (!placeId) {
+      return res.status(400).json({ error: 'placeId is required' });
+    }
+    const clinic = await getClinicByGooglePlaceId(placeId);
 
     if (!clinic) {
       return res.status(404).json({ error: 'Clinic not found' });
