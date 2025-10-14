@@ -1,4 +1,4 @@
-import Review from '../models/review';
+import {Review} from '../models/models';
 
 export function toReviewDTO(r: Review) {
   return {
