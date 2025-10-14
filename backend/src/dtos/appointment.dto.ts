@@ -1,4 +1,4 @@
-import Appointment from '../models/appointment';
+import {Appointment} from '../models/models';
 
 export function toAppointmentDTO(a: Appointment) {
   return {

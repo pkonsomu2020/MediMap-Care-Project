@@ -24,14 +24,77 @@ export async function findUserById(id: number) {
   return data || null;
 }
 
-export async function createUserDb(payload: { name: string; email: string; phone?: string | null; password?: string | null; role?: string }) {
-  const { data, error } = await serviceClient!.from('users')
-    .insert({ name: payload.name, email: payload.email, phone: payload.phone ?? null, password: payload.password ?? null, role: payload.role ?? 'user' })
-    .select('user_id, name, email, phone, role')
+export async function createUserDb(payload: {
+  name: string;
+  email: string;
+  phone?: string | null;
+  password?: string | null;
+  role?: string;
+}) {
+  const { data, error } = await serviceClient!
+    .from("users")
+    .insert({
+      name: payload.name,
+      email: payload.email,
+      phone: payload.phone ?? null,
+      password: payload.password ?? null,
+      role: payload.role ?? "user",
+    })
+    .select("user_id, name, email, phone, role")
     .single();
+
   if (error) throw error;
+
+  // ✅ Add a dummy password field to satisfy old code and TypeScript
+  return {
+    ...data,
+    password: "hidden",
+  };
+}
+
+// Update user info
+export async function updateUserById(userId: number, updates: Record<string, any>) {
+  const { data: columns } = await serviceClient!
+    .from('users')
+    .select('*')
+    .limit(1);
+
+  if (!columns || columns.length === 0) {
+    throw new Error('Could not fetch user schema');
+  }
+
+  const existingKeys = Object.keys(columns[0]);
+  const filteredUpdates: Record<string, any> = {};
+
+  for (const key of Object.keys(updates)) {
+    if (existingKeys.includes(key)) {
+      filteredUpdates[key] = updates[key];
+    }
+  }
+
+  console.log('[updateUserById] Filtered updates:', filteredUpdates);
+
+  if (Object.keys(filteredUpdates).length === 0) {
+    throw new Error('No valid fields to update');
+  }
+
+  const { data, error } = await serviceClient!
+    .from('users')
+    .update(filteredUpdates)
+    .eq('user_id', userId)
+    .select('*')
+    .maybeSingle();
+
+  if (error) {
+    console.error('[updateUserById] Supabase error:', error);
+    throw error;
+  }
+
   return data;
 }
+
+
+
 
 // CLINICS
 export async function listClinicsDb(filters: { q?: string; min_rating?: number } = {}) {

@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { OAuth2Client, LoginTicket } from 'google-auth-library';
-import { createUserDb, findUserByEmail, findUserById } from '../lib/data';
+import { createUserDb, findUserByEmail, findUserById, updateUserById } from '../lib/data';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
@@ -108,5 +107,54 @@ router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Respons
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// Update current user profile
+router.patch('/me', authMiddleware, async (req: AuthenticatedRequest, res: Response): Promise<Response> => {
+  try {
+    const userId = req.auth!.userId;
+    const updates = req.body;
+
+    console.log('\n=== PATCH /me Debug Info ===');
+    console.log('User ID:', userId);
+    console.log('Incoming updates:', updates);
+
+    const updatedUser = await updateUserById(userId, updates);
+
+    console.log('Updated user record:', updatedUser);
+
+    if (!updatedUser) {
+      console.warn('No user found or updated');
+      return res.status(404).json({ error: 'User not found or no changes applied' });
+    }
+
+    return res.json({ message: 'Profile updated successfully', user: updatedUser });
+
+  } catch (error: any) {
+    console.error('\n❌ Error updating user:');
+    console.error('Message:', error.message);
+    console.error('Stack:', error.stack);
+
+    if (error.code) console.error('Supabase Error Code:', error.code);
+    if (error.details) console.error('Supabase Error Details:', error.details);
+    if (error.hint) console.error('Supabase Error Hint:', error.hint);
+
+    if (error.message === 'No valid fields to update') {
+      return res.status(400).json({ error: error.message });
+    }
+
+    // Return detailed info during debugging — remove in production
+    return res.status(500).json({
+      error: 'Internal server error',
+      debug: {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      },
+    });
+  }
+});
+
+
 
 export default router;
