@@ -3,10 +3,12 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
-import DashboardLayout from "./components/dashboard/DashboardLayout";
+import NotFound from "./pages/NotFound";
+
 import FindClinics from "./pages/dashboard/FindClinics";
 import Appointments from "./pages/dashboard/Appointments";
 import Directory from "./pages/dashboard/Directory";
@@ -14,7 +16,9 @@ import Reviews from "./pages/dashboard/Reviews";
 import Profile from "./pages/dashboard/Profile";
 import ClinicProfile from "./pages/dashboard/ClinicProfile";
 import Emergency from "./pages/dashboard/Emergency";
-import NotFound from "./pages/NotFound";
+import InsuranceForm from "./pages/dashboard/InsuranceForm";
+
+import DashboardLayout from "./components/dashboard/DashboardLayout";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +47,7 @@ const App = () => (
             <Route path="clinic/:id" element={<ClinicProfile />} />
             <Route path="reviews" element={<Reviews />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="profile/insurance-form" element={<InsuranceForm/>} />
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
