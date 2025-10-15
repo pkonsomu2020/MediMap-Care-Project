@@ -11,7 +11,9 @@ import {
   Alert,
 } from "react-native";
 import { Search, Filter } from "lucide-react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from 'expo-location';
+
 import { api } from "../../lib/api";
 import { styles } from "../../styles/FindClinics.styles";
 import MiniMap from "../../compontents/MiniMap";
@@ -19,6 +21,7 @@ import FiltersSidebar from "../../compontents/FiltersSidebar";
 import FullScreenMap from "../../compontents/FullScreenMap";
 import ClinicCard from "../../compontents/ClinicCard";
 import { Clinic } from "../../compontents/types/clinic.types";
+
 
 const PAGE_SIZE = 20;
 
@@ -46,7 +49,14 @@ const FindClinics: React.FC = () => {
   const [gettingLocation, setGettingLocation] = useState(false);
 
   useEffect(() => {
-    loadClinics(1, searchQuery, false);
+    AsyncStorage.getItem("searchValue").then((value) => {
+      if (value) {
+      setSearchQuery(value);
+      loadClinics(1, value, false);
+      } else {
+      loadClinics(1, searchQuery, false);
+      }
+    });
     requestLocationPermission();
   }, []);
 

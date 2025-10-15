@@ -22,7 +22,7 @@ export default function CTA() {
       <View style={styles.heroBox}>
         <View style={styles.logoCircle}>
           <Image
-            source={require("../../assets/logo.png")} // update this path
+            source={require("../../assets/logo.png")}
             style={styles.logo}
             resizeMode="contain"
           />
