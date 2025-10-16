@@ -23,39 +23,47 @@ export const RadiusControls: React.FC<RadiusControlsProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`flex items-center gap-2 flex-wrap ${className}`} role="group" aria-label="Radius controls">
-      {PRESETS.map((km) => {
-        const active = radiusMode === 'preset' && radiusKm === km;
-        return (
-          <Button
-            key={km}
-            type="button"
-            variant={active ? 'default' : 'outline'}
-            size="sm"
-            aria-pressed={active}
-            aria-label={`${km} kilometers`}
-            disabled={disabled}
-            onClick={() => {
-              setRadiusMode('preset');
-              setRadiusKm(km);
-            }}
-          >
-            {km} km
-          </Button>
-        );
-      })}
+    <div className={`space-y-3 ${className}`} role="group" aria-label="Radius controls">
+      {/* Preset radius buttons */}
+      <div className="grid grid-cols-4 gap-2">
+        {PRESETS.map((km) => {
+          const active = radiusMode === 'preset' && radiusKm === km;
+          return (
+            <Button
+              key={km}
+              type="button"
+              variant={active ? 'default' : 'outline'}
+              size="sm"
+              aria-pressed={active}
+              aria-label={`${km} kilometers`}
+              disabled={disabled}
+              className="w-full"
+              onClick={() => {
+                setRadiusMode('preset');
+                setRadiusKm(km);
+              }}
+            >
+              {km} km
+            </Button>
+          );
+        })}
+      </div>
 
-      <Button
-        type="button"
-        variant={radiusMode === 'drag' ? 'default' : 'outline'}
-        size="sm"
-        aria-pressed={radiusMode === 'drag'}
-        aria-label="Enable drag radius mode"
-        disabled={disabled}
-        onClick={() => setRadiusMode(radiusMode === 'drag' ? 'preset' : 'drag')}
-      >
-        {radiusMode === 'drag' ? 'Drag: On' : 'Drag: Off'}
-      </Button>
+      {/* Drag mode toggle */}
+      <div className="flex justify-center">
+        <Button
+          type="button"
+          variant={radiusMode === 'drag' ? 'default' : 'outline'}
+          size="sm"
+          aria-pressed={radiusMode === 'drag'}
+          aria-label="Enable drag radius mode"
+          disabled={disabled}
+          className="w-full max-w-[120px]"
+          onClick={() => setRadiusMode(radiusMode === 'drag' ? 'preset' : 'drag')}
+        >
+          {radiusMode === 'drag' ? '🎯 Drag: On' : '🎯 Drag: Off'}
+        </Button>
+      </div>
     </div>
   );
 };

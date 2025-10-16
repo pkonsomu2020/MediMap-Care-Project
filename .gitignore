@@ -56,3 +56,4 @@ coverage/
 
 TODO.md
 frontend/.env
+backend/.env

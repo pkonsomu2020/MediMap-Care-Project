@@ -1,6 +1,6 @@
 // frontend/src/pages/dashboard/FindClinics.tsx
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Search, MapPin, Star, Clock, Phone, Navigation, Route, Calendar as CalendarIcon } from "lucide-react";
+import { Search, MapPin, Star, Clock, Phone, Navigation, Route, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -99,12 +99,34 @@ const FindClinics = () => {
     radiusMode,
     radiusKm,
     types: selectedSpecialty === "all" ? undefined : [selectedSpecialty],
-    ranking: "POPULARITY",
+    ranking: "DISTANCE", // Changed from POPULARITY to DISTANCE for proximity-based results
     maxResults: 20,
     skipCache: radiusMode === "drag",
   });
 
-  const normalizedClinics: NormalizedClinic[] = clinicsData?.normalized || [];
+  // Sort clinics by distance if user location is available
+  const normalizedClinics: NormalizedClinic[] = useMemo(() => {
+    const clinics = clinicsData?.normalized || [];
+    
+    if (!userLocation || clinics.length === 0) {
+      return clinics;
+    }
+
+    // Calculate distances and sort by proximity
+    const clinicsWithDistance = clinics.map(clinic => ({
+      ...clinic,
+      calculatedDistance: computeDistanceKm(
+        userLocation.lat,
+        userLocation.lng,
+        clinic.position.lat,
+        clinic.position.lng
+      )
+    }));
+
+    // Sort by distance (closest first)
+    return clinicsWithDistance.sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+  }, [clinicsData?.normalized, userLocation]);
+
   const activeClinic: NormalizedClinic | null = useMemo(
     () => normalizedClinics.find((c) => String(c.id) === String(activeClinicId)) || null,
     [normalizedClinics, activeClinicId]
@@ -399,11 +421,24 @@ const FindClinics = () => {
           {/* Filters Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-card rounded-xl p-6 shadow-soft border border-border sticky top-24">
-              <h2 className="font-semibold text-lg mb-4">Search & Filters</h2>
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Search className="h-4 w-4 text-primary" />
+                </div>
+                <h2 className="font-semibold text-lg">Search & Filters</h2>
+              </div>
 
               {/* Location input + actions */}
-              <div className="space-y-2 mb-6">
-                <label className="text-sm font-medium">Location</label>
+              <div className="space-y-3 mb-6">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-foreground">Location</label>
+                  {userLocation && (
+                    <div className="flex items-center gap-1 text-xs text-green-600">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      {reverse.result?.formattedAddress ? 'Address found' : 'Location set'}
+                    </div>
+                  )}
+                </div>
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
@@ -416,56 +451,79 @@ const FindClinics = () => {
                     }}
                   />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button onClick={handleSearch} size="sm" className="flex-1 min-w-0">
+                
+                {/* Primary action buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button onClick={handleSearch} size="sm" className="w-full">
                     <Search className="h-4 w-4 mr-2" />
                     Search
                   </Button>
-                  <Button onClick={handleUseMyLocation} variant="outline" size="sm" className="flex-1 min-w-0">
+                  <Button onClick={handleUseMyLocation} variant="outline" size="sm" className="w-full">
                     <Navigation className="h-4 w-4 mr-2" />
                     My Location
                   </Button>
-                  <Button
-                    onClick={() => {
-                      if (userLocation) {
-                        reverseGeocode(userLocation).catch(() => {});
-                      }
-                    }}
-                    variant="ghost"
-                    size="sm"
-                    disabled={!userLocation}
-                    className="flex-1 min-w-0"
-                  >
-                    Reverse Geocode
-                  </Button>
                 </div>
+
+                {/* Secondary action button */}
+                <Button
+                  onClick={() => {
+                    if (userLocation) {
+                      reverseGeocode(userLocation).catch(() => {});
+                    }
+                  }}
+                  variant="secondary"
+                  size="sm"
+                  disabled={!userLocation || reverse.loading}
+                  className="w-full"
+                  title="Get the address for your current location coordinates"
+                >
+                  {reverse.loading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Getting Address...
+                    </>
+                  ) : (
+                    <>
+                      <MapPin className="h-4 w-4 mr-2" />
+                      Reverse Geocode
+                    </>
+                  )}
+                </Button>
+                
+                {/* Show reverse geocode result if available */}
+                {reverse.result?.formattedAddress && (
+                  <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded-md">
+                    <strong>Address:</strong> {reverse.result.formattedAddress}
+                  </div>
+                )}
               </div>
 
               {/* Radius controls */}
-              <div className="space-y-2 mb-6">
-                <label className="text-sm font-medium">Radius</label>
+              <div className="space-y-3 mb-6">
+                <label className="text-sm font-medium text-foreground">Search Radius</label>
                 <RadiusControls
                   radiusKm={radiusKm}
                   setRadiusKm={setRadiusKm}
                   radiusMode={radiusMode}
                   setRadiusMode={setRadiusMode}
                   disabled={!hasUserLocation}
+                  className="gap-2"
                 />
               </div>
 
               {/* Specialty (types) */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Type</label>
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Healthcare Type</label>
                 <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="All types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All</SelectItem>
-                    <SelectItem value="hospital">Hospital</SelectItem>
-                    <SelectItem value="doctor">Doctor</SelectItem>
-                    <SelectItem value="pharmacy">Pharmacy</SelectItem>
-                    <SelectItem value="clinic">Clinic</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="hospital">🏥 Hospital</SelectItem>
+                    <SelectItem value="doctor">👨‍⚕️ Doctor</SelectItem>
+                    <SelectItem value="pharmacy">💊 Pharmacy</SelectItem>
+                    <SelectItem value="clinic">🏥 Clinic</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
