@@ -1,0 +1,170 @@
+[
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "AAR Insurance Kenya Limited"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "Medical Insurance Provider (Health Specialist)",
+      "Plan_Type_General": "Individual, Family, Corporate, Seniors",
+      "Prior_Authorization_Required_Rule": "Yes (pre-authorization required for inpatient/high-cost services)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "Mixed capitation (HMO) and indemnity (PPO) options",
+      "Out_of_Pocket_Structure": "Co-pay or deductible per visit/hospitalization (plan-dependent)"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "Jubilee Allianz Insurance Company of Kenya Limited"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "Composite Insurer (Life & General)",
+      "Plan_Type_General": "Individual/Family (J-Care), Corporate/Group, International",
+      "Prior_Authorization_Required_Rule": "Yes (all inpatient treatments require pre-authorization:contentReference[oaicite:36]{index=36})"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "PPO-style (wide provider network); some capitation in budget plans",
+      "Out_of_Pocket_Structure": "Standard co-pay on outpatient; deductibles on higher inpatient limits"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "Britam General Insurance Co. (Kenya) Limited"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "Composite Insurer (Life & General)",
+      "Plan_Type_General": "Individual/Family (Milele Health), Corporate (Milele Corporate), Micro-insurance (Bima Ya Mwananchi)",
+      "Prior_Authorization_Required_Rule": "Yes (e.g. inpatient admissions require prior approval)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "PPO-style with defined provider tiers (some capitation for budget plans)",
+      "Out_of_Pocket_Structure": "Co-payments common on outpatient benefits; standard deductibles"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "Old Mutual (UAP Old Mutual) Insurance Ltd."
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "Composite Insurer (Life & General)",
+      "Plan_Type_General": "Individual/Family (Afya Imara), Corporate, Seniors (Afya Imara Seniors), Executive",
+      "Prior_Authorization_Required_Rule": "Yes (pre-authorization for inpatient, maternity, major diagnostics)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "PPO-style (e.g. Afya Imara Comprehensive), tiered hospital access",
+      "Out_of_Pocket_Structure": "Co-pay/deductible varies by plan and network tier"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "CIC Insurance Group Limited"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "Composite Insurer (Life & General)",
+      "Plan_Type_General": "Individual/Family (CIC Medisure), Corporate/Group, Seniors (Mediplan), SACCO/Cooperative schemes",
+      "Prior_Authorization_Required_Rule": "Yes (authorizations for inpatient admissions and major electives)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "PPO-style (wide network); emphasis on cooperative/group plans",
+      "Out_of_Pocket_Structure": "Standard co-pay for outpatient visits"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "APA Insurance Limited"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "Composite Insurer (Life & General)",
+      "Plan_Type_General": "Family/Individual (Jamii Plus), Corporate/SME, International (Hollard Int’l)",
+      "Prior_Authorization_Required_Rule": "Yes (hospitalization and specialized procedures)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "Indemnity (PPO) and budget (Afya Nafuu) options",
+      "Out_of_Pocket_Structure": "Percent co-pay or fixed co-pay per service"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "ICEA LION General Insurance Co. Ltd."
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "Composite Insurer (Life & General)",
+      "Plan_Type_General": "Corporate/Group Health, SME, Individual/Family",
+      "Prior_Authorization_Required_Rule": "Yes (inpatient and major procedures)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "Tailored corporate and group schemes",
+      "Out_of_Pocket_Structure": "Deductibles on high-limit inpatient plans"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "Heritage Insurance Company Limited"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "General Insurer (Health Provider)",
+      "Plan_Type_General": "Individual/Family (HeriAfya), Corporate/Group, International",
+      "Prior_Authorization_Required_Rule": "Yes (elective procedures require pre-approval)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "Focus on quality network; mix of plans with/without sub-limits",
+      "Out_of_Pocket_Structure": "Flexible co-pay/deductible depending on plan tier"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "Madison Insurance Company Kenya Limited"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "Life & General Insurer (Health Provider)",
+      "Plan_Type_General": "Individual/Family (BetterLife), SME (BetterLife SME), Corporate/Group",
+      "Prior_Authorization_Required_Rule": "Yes (for admissions and pre-planned services)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "Tiered plans (e.g. Budget, Premier) with network differences",
+      "Out_of_Pocket_Structure": "Higher co-pays or restrictions on lower-tier plans"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "GA Insurance Limited (General Accident)"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "General Insurer (Health Provider)",
+      "Plan_Type_General": "Family Plan, Corporate/Group, High-Net-Worth (Hadhi Health)",
+      "Prior_Authorization_Required_Rule": "Yes (all inpatient and maternity claims)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "Standard group and individual plans with Hadhi for seniors",
+      "Out_of_Pocket_Structure": "Co-payment on outpatient services"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "First Assurance Company Limited"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "General Insurer (Health Provider)",
+      "Plan_Type_General": "Individual/Family (First-Med), Corporate/Group, SME",
+      "Prior_Authorization_Required_Rule": "Yes (admissions and elective procedures)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "Affordable plans geared to SMEs and mid-market",
+      "Out_of_Pocket_Structure": "Standard co-pay for consultations"
+    }
+  },
+  {
+    "Payer_ID": {
+      "Insurance_Company_Name": "Pacis Insurance Company Limited"
+    },
+    "Coverage": {
+      "Primary_Coverage_Category": "General Insurer (Health Provider)",
+      "Plan_Type_General": "Individual/Family (Pacis Amani), Church/Group (Religious Comprehensive)",
+      "Prior_Authorization_Required_Rule": "Yes (all inpatient services)"
+    },
+    "Financial_Defaults": {
+      "Typical_Plan_Type_Mix": "Value-oriented medical cover",
+      "Out_of_Pocket_Structure": "Standard co-payment structure"
+    }
+  }
+]

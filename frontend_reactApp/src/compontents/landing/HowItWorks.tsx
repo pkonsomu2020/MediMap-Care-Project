@@ -1,8 +1,15 @@
 import React from "react";
 import { View, Text, StyleSheet, ScrollView } from "react-native";
-import Feather from "react-native-vector-icons/Feather";
+import {Feather} from "@expo/vector-icons";
 
-const steps = [
+type Step = {
+    icon: React.ComponentProps<typeof Feather>['name'],
+    title: string,
+    description: string,
+    step: string
+  };
+
+const steps: Step[] = [
   {
     icon: "search",
     title: "Search for Clinics",

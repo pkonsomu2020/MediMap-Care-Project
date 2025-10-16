@@ -5,6 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { api } from "@/lib/api";
 
 type User = {
@@ -16,6 +18,7 @@ type User = {
 };
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -238,8 +241,25 @@ const Profile = () => {
                       disabled
                     />
                   </div>
+                    <div className="space-y-2 md:col-start-2 md:row-start-2">
+                      <Label htmlFor="insuranceInfo">Insurance Info</Label>
+                      <Button id="insuranceInfo" className="w-full flex items-center justify-between" onClick={() => navigate("insurance-form" as never)}>
+                        Edit/View Info
+                        <svg
+                          className="ml-2 h-4 w-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Button>
+                    </div>
                 </div>
               </div>
+
+
 
               {/* Emergency Contact */}
               <div className="pt-6 border-t border-border">

@@ -2,7 +2,7 @@ import cors, { CorsOptions } from 'cors';
 import { env } from './env';
 
 export function buildCors() {
-  const origin = env.CORS_ORIGIN || 'http://localhost:8080,http://localhost:3000';
+  const origin = env.CORS_ORIGIN || 'http://localhost:3000';
   const allowedOrigins = typeof origin === 'string' ? origin.split(',') : origin;
 
   const options: CorsOptions = {

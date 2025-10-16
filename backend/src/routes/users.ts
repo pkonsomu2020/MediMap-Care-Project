@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { OAuth2Client } from 'google-auth-library';
 import { createUserDb, findUserByEmail, findUserById, updateUserById } from '../lib/data';
 import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
 
@@ -65,7 +66,7 @@ router.post('/google-login', async (req: Request, res: Response): Promise<Respon
     return res.status(500).json({ error: 'Google Client ID not configured' });
   }
   try {
-    const client = new OAuth2Client();
+    const client = new OAuth2Client(); // This should now work
     const ticket = await client.verifyIdToken({
       idToken: id_token,
       audience: process.env.GOOGLE_CLIENT_ID,

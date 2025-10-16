@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useState} from "react";
 import {
   View,
   Text,
@@ -10,8 +10,12 @@ import {
 } from "react-native";
 import { MapPin, Search, Calendar } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export default function Hero({ navigation }: { navigation?: any }) {
+export default function Hero() {
+  const navigation = useNavigation();
+  const [searchValue, setSearchValue] = useState("");
   return (
     <ScrollView
       style={styles.container}
@@ -50,11 +54,16 @@ export default function Hero({ navigation }: { navigation?: any }) {
               placeholder="Search by location, clinic, or service..."
               placeholderTextColor="#9CA3AF"
               style={styles.input}
+              value={searchValue}
+              onChangeText={setSearchValue}
             />
           </View>
           <TouchableOpacity
             style={styles.searchButton}
-            onPress={() => navigation?.navigate?.("FindClinics")}
+            onPress={async () => {
+              await AsyncStorage.setItem("searchValue", searchValue);
+              navigation.navigate("FindClinics" as never);
+            }}
           >
             <MapPin size={18} color="#fff" />
             <Text style={styles.searchButtonText}>Find Clinics</Text>
@@ -90,7 +99,9 @@ export default function Hero({ navigation }: { navigation?: any }) {
               ))}
               <Text style={styles.plusText}>+120</Text>
             </View>
-            <TouchableOpacity style={styles.bookButton}>
+            <TouchableOpacity style={styles.bookButton}
+              onPress={() => navigation.navigate("Appointments" as never)}
+            >
               <Text style={styles.bookButtonText}>Book Now</Text>
             </TouchableOpacity>
           </View>
