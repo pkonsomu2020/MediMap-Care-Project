@@ -114,10 +114,10 @@ router.post('/discover', async (req: Request, res: Response): Promise<Response> 
       return res.json([]);
     }
 
-    // 2. Upsert them into the database using the service method
-    const savedClinics = await googlePlacesService.saveClinicsToSupabase(uniquePlaces);
+    // 2. Upsert them into the database using the service method with user coordinates for distance sorting
+    const savedClinics = await googlePlacesService.saveClinicsToSupabase(uniquePlaces, parseFloat(lat), parseFloat(lng));
 
-    // 3. Return the newly saved clinics
+    // 3. Return the newly saved clinics (already sorted by distance)
     return res.status(200).json(savedClinics);
   } catch (error: any) {
     console.error('[DISCOVER_CLINICS_ERROR]', error);

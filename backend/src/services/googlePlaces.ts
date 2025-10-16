@@ -79,6 +79,40 @@ export class GooglePlacesService {
   }
 
   /**
+   * Calculate distance between two points using Haversine formula
+   * Returns distance in kilometers
+   */
+  private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371; // Earth's radius in kilometers
+    const dLat = (lat2 - lat1) * (Math.PI / 180);
+    const dLon = (lon2 - lon1) * (Math.PI / 180);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  /**
+   * Normalize Google place types into one of our categories
+   * Returned set: 'hospital' | 'doctor' | 'pharmacy' | 'clinic'
+   */
+  private deriveCategory(placeTypes?: string[]): 'hospital' | 'doctor' | 'pharmacy' | 'clinic' {
+    const types = (placeTypes || []).map((t) => t.toLowerCase());
+    // Strong matches first
+    if (types.includes('pharmacy') || types.includes('drugstore')) return 'pharmacy';
+    if (types.includes('doctor') || types.includes('physician') || types.includes('medical_doctor')) return 'doctor';
+    if (types.includes('hospital')) return 'hospital';
+    // Clinics and generic health facilities
+    if (types.includes('clinic') || types.includes('health') || types.includes('healthcare') || types.includes('medical')) return 'clinic';
+    // Fallback
+    return 'hospital';
+  }
+
+  /**
    * Log helper to keep sensitive data out of console while aiding debugging
    */
   private logCall(scope: string, payload: Record<string, unknown>) {
@@ -238,7 +272,7 @@ export class GooglePlacesService {
    * Save or update clinic data in Supabase
    * Uses upsert to avoid duplicates and reduce API costs
    */
-  async saveClinicsToSupabase(places: GooglePlaceResult[]): Promise<any[]> {
+  async saveClinicsToSupabase(places: GooglePlaceResult[], userLat?: number, userLng?: number): Promise<any[]> {
     // Artificial delay to investigate potential timing issue
     await new Promise(resolve => setTimeout(resolve, 100));
 
@@ -255,7 +289,7 @@ export class GooglePlacesService {
       google_place_id: place.id,
       last_updated: new Date().toISOString(),
       is_active: place.businessStatus === 'OPERATIONAL',
-      category: 'hospital',
+      category: this.deriveCategory(place.types),
       source: 'google_places',
       services: place.types?.join(', ') || null
     }));
@@ -270,7 +304,19 @@ export class GooglePlacesService {
       throw error;
     }
 
-    return data || [];
+    const savedClinics = data || [];
+
+    // If user location is provided, sort by distance
+    if (userLat !== undefined && userLng !== undefined) {
+      const clinicsWithDistance = savedClinics.map(clinic => ({
+        ...clinic,
+        calculatedDistance: this.calculateDistance(userLat, userLng, clinic.latitude, clinic.longitude)
+      }));
+
+      return clinicsWithDistance.sort((a, b) => a.calculatedDistance - b.calculatedDistance);
+    }
+
+    return savedClinics;
   }
 
   /**
@@ -304,12 +350,13 @@ export class GooglePlacesService {
 
 
   /**
-   * Get cached clinics from Supabase within radius
+   * Get cached clinics from Supabase within radius, sorted by distance
    */
   async getCachedClinics(
     latitude: number,
     longitude: number,
-    radiusKm: number = 10
+    radiusKm: number = 10,
+    typeList?: string[]
   ): Promise<any[]> {
     try {
       // Use PostGIS or simple distance calculation
@@ -317,19 +364,43 @@ export class GooglePlacesService {
       const latDelta = radiusKm / 111; // Rough conversion: 1 degree ≈ 111 km
       const lngDelta = radiusKm / (111 * Math.cos(latitude * Math.PI / 180));
 
-      const { data, error } = await serviceClient!
+      let query = serviceClient!
         .from('clinics')
         .select('*')
         .gte('latitude', latitude - latDelta)
         .lte('latitude', latitude + latDelta)
         .gte('longitude', longitude - lngDelta)
         .lte('longitude', longitude + lngDelta)
-        .eq('is_active', true)
-        .order('rating', { ascending: false })
-        .limit(20);
+        .eq('is_active', true);
+
+      // Optional filter by normalized category when provided
+      if (typeList && typeList.length > 0) {
+        // Only allow known categories
+        const allowed = typeList
+          .map((t) => t.toLowerCase())
+          .filter((t) => ['hospital', 'doctor', 'pharmacy', 'clinic'].includes(t));
+        if (allowed.length > 0) {
+          query = query.in('category', allowed as any);
+        }
+      }
+
+      const { data, error } = await query.limit(50); // Get more results to sort by distance
 
       if (error) throw error;
-      return data || [];
+      
+      const clinics = data || [];
+      
+      // Calculate distances and sort by proximity
+      const clinicsWithDistance = clinics.map(clinic => ({
+        ...clinic,
+        calculatedDistance: this.calculateDistance(latitude, longitude, clinic.latitude, clinic.longitude)
+      }));
+
+      // Filter by actual radius and sort by distance
+      return clinicsWithDistance
+        .filter(clinic => clinic.calculatedDistance <= radiusKm)
+        .sort((a, b) => a.calculatedDistance - b.calculatedDistance)
+        .slice(0, 20); // Limit to 20 results
     } catch (error) {
       console.error('Error fetching cached clinics:', error);
       throw error;

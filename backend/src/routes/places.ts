@@ -60,24 +60,29 @@ router.get('/nearby', async (req: Request, res: Response): Promise<Response> => 
 
     let clinics: any[] = [];
     if (!shouldBypassCache) {
-      clinics = await googlePlacesService.getCachedClinics(latitude, longitude, radiusKmNumber);
+      clinics = await googlePlacesService.getCachedClinics(latitude, longitude, radiusKmNumber, typeList);
     }
 
     // If cache is insufficient, fetch from Google Places
     if (clinics.length < 5 || shouldBypassCache) {
+      // Use DISTANCE ranking by default for proximity-based results
+      const searchRanking = ranking || 'DISTANCE';
+      
       const nearbyResult = await googlePlacesService.searchNearby({
         latitude,
         longitude,
         radiusMeters,
         maxResultCount,
         ...(typeList && typeList.length > 0 ? { types: typeList } : {}),
-        ...(ranking ? { ranking } : {}),
+        ranking: searchRanking,
       });
 
-      clinics = await googlePlacesService.saveClinicsToSupabase(nearbyResult.places);
+      // Pass user coordinates to sort saved clinics by distance
+      clinics = await googlePlacesService.saveClinicsToSupabase(nearbyResult.places, latitude, longitude);
       debug.source = 'google_places';
       debug.placesMeta = nearbyResult.meta;
       debug.placeCount = nearbyResult.places.length;
+      debug.ranking = searchRanking;
     } else {
       debug.cachedCount = clinics.length;
     }
