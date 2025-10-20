@@ -4,3 +4,6 @@ requests
 googlemaps
 supabase
 bcrypt
+sentence-transformers
+fastapi
+uvicorn
