@@ -8,15 +8,8 @@ import {
   ScrollView,
   Image,
 } from "react-native";
-import {
-  MapPin,
-  Mail,
-  Phone,
-  Facebook,
-  Twitter,
-  Instagram,
-  Linkedin,
-} from "lucide-react-native";
+import { MapPin, Mail, Phone } from "lucide-react-native";
+import { FontAwesome } from "@expo/vector-icons";
 
 const footerLinks = {
   product: [
@@ -39,11 +32,13 @@ const footerLinks = {
   ],
 };
 
-const socialLinks = [
-  { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
-  { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
-  { icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-  { icon: Linkedin, href: "https://linkedin.com", label: "LinkedIn" },
+type FontAwesomeName = React.ComponentProps<typeof FontAwesome>['name'];
+
+const socialLinks: { name: FontAwesomeName; href: string ; label: string }[] = [
+  { name: 'facebook', href: process.env.FACEBOOK_URL, label: 'Facebook' },
+  { name: 'twitter', href: process.env.TWITTER_URL, label: 'Twitter' },
+  { name: 'instagram', href: process.env.INSTAGRAM_URL, label: 'Instagram' },
+  { name: 'linkedin', href: process.env.LINKEDIN_URL, label: 'LinkedIn' },
 ];
 
 export default function Footer() {
@@ -77,12 +72,12 @@ export default function Footer() {
               <View style={styles.contactRow}>
                 <Mail size={16} color="#6B7280" />
                 <Text style={styles.contactText}>
-                  contact@medimapcare.com
+                  {process.env.CONTACT_EMAIL}
                 </Text>
               </View>
               <View style={styles.contactRow}>
                 <Phone size={16} color="#6B7280" />
-                <Text style={styles.contactText}>+1 (555) 123-4567</Text>
+                <Text style={styles.contactText}>{process.env.CONTACT_PHONE}</Text>
               </View>
             </View>
           </View>
@@ -103,7 +98,6 @@ export default function Footer() {
 
           <View style={styles.socialContainer}>
             {socialLinks.map((social) => {
-              const Icon = social.icon;
               return (
                 <TouchableOpacity
                   key={social.label}
@@ -111,7 +105,7 @@ export default function Footer() {
                   accessibilityLabel={social.label}
                   style={styles.socialButton}
                 >
-                  <Icon size={20} color="#374151" />
+                  <FontAwesome name={social.name} size={20} color="#374151" />
                 </TouchableOpacity>
               );
             })}
