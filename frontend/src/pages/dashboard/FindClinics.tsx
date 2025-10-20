@@ -452,8 +452,8 @@ const FindClinics = () => {
                   />
                 </div>
                 
-                {/* Primary action buttons */}
-                <div className="grid grid-cols-2 gap-2">
+                {/* Action buttons */}
+                <div className="flex flex-wrap gap-2">
                   <Button onClick={handleSearch} size="sm" className="w-full">
                     <Search className="h-4 w-4 mr-2" />
                     Search
@@ -462,33 +462,31 @@ const FindClinics = () => {
                     <Navigation className="h-4 w-4 mr-2" />
                     My Location
                   </Button>
+                  <Button
+                    onClick={() => {
+                      if (userLocation) {
+                        reverseGeocode(userLocation).catch(() => {});
+                      }
+                    }}
+                    variant="secondary"
+                    size="sm"
+                    disabled={!userLocation || reverse.loading}
+                    className="w-full"
+                    title="Get the address for your current location coordinates"
+                  >
+                    {reverse.loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Getting Address...
+                      </>
+                    ) : (
+                      <>
+                        <MapPin className="h-4 w-4 mr-2" />
+                        Reverse Geocode
+                      </>
+                    )}
+                  </Button>
                 </div>
-
-                {/* Secondary action button */}
-                <Button
-                  onClick={() => {
-                    if (userLocation) {
-                      reverseGeocode(userLocation).catch(() => {});
-                    }
-                  }}
-                  variant="secondary"
-                  size="sm"
-                  disabled={!userLocation || reverse.loading}
-                  className="w-full"
-                  title="Get the address for your current location coordinates"
-                >
-                  {reverse.loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Getting Address...
-                    </>
-                  ) : (
-                    <>
-                      <MapPin className="h-4 w-4 mr-2" />
-                      Reverse Geocode
-                    </>
-                  )}
-                </Button>
                 
                 {/* Show reverse geocode result if available */}
                 {reverse.result?.formattedAddress && (
@@ -691,10 +689,10 @@ const FindClinics = () => {
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-4">
+                    <div className="flex flex-wrap gap-2 mt-4">
                       <Button
                         size="sm"
-                        className="bg-emerald-500 hover:bg-emerald-600 flex-1 md:flex-none"
+                        className="bg-emerald-500 hover:bg-emerald-600 w-full"
                         onClick={() => handleBookAppointment(clinic)}
                       >
                         Book Appointment
@@ -702,7 +700,7 @@ const FindClinics = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="flex-1 md:flex-none"
+                        className="w-full"
                         onClick={() => handleViewDetails(clinic)}
                       >
                         View Details
@@ -710,7 +708,7 @@ const FindClinics = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="flex-1 md:flex-none"
+                        className="w-full"
                         onClick={() => {
                           const phone = clinic.raw?.contact || clinic.phone;
                           if (phone) {
@@ -730,7 +728,7 @@ const FindClinics = () => {
                       <Button
                         variant="secondary"
                         size="sm"
-                        className="flex-1 md:flex-none"
+                        className="w-full"
                         onClick={() => handleGetDirections(clinic)}
                         disabled={!userLocation}
                       >
