@@ -2,7 +2,7 @@
 node_modules/
 
 # Build outputs
-backend/dist/*
+backend/dist/
 dist-ssr/
 build/
 

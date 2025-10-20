@@ -14,18 +14,17 @@ const envSchema = z.object({
     message: 'SUPABASE_URL is required and must be a valid URL',
   }),
   SUPABASE_ANON_KEY: z.string().optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string({
-    required_error: 'SUPABASE_SERVICE_ROLE_KEY is required',
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, {
+    message: 'SUPABASE_SERVICE_ROLE_KEY is required',
   }),
   JWT_SECRET: z.string().optional(),
   JWT_EXPIRES_IN: z.string().optional(),
-  GOOGLE_MAPS_API_KEY: z.string({
-    required_error: 'GOOGLE_MAPS_API_KEY is required',
-  }),
+  GOOGLE_MAPS_API_KEY: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
+  console.log(process.env)
   // eslint-disable-next-line no-console
   console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
   throw new Error('Invalid environment variables');
@@ -35,5 +34,3 @@ export const env = {
   ...parsed.data,
   portNumber: parseInt(parsed.data.PORT || '8001', 10),
 };
-
-
