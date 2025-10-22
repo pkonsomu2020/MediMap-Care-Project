@@ -1,4 +1,4 @@
-import { Mail, Phone, MapPin, Calendar, Edit2, Save, Loader2 } from "lucide-react";
+import { Mail, Phone, Edit2, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,10 +20,17 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
+    bloodType: "",
+    allergies: "",
+    conditions: "",
+    emergencyName: "",
+    emergencyRelation: "",
+    emergencyPhone: "",
   });
 
   useEffect(() => {
@@ -37,9 +44,16 @@ const Profile = () => {
           name: userData.name,
           email: userData.email,
           phone: userData.phone || "",
+          bloodType: userData.bloodType || "",
+          allergies: userData.allergies || "",
+          conditions: userData.conditions || "",
+          emergencyName: userData.emergencyName || "",
+          emergencyRelation: userData.emergencyRelation || "",
+          emergencyPhone: userData.emergencyPhone || "",
         });
       } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : "Failed to load profile";
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load profile";
         setError(errorMessage);
       } finally {
         setLoading(false);
@@ -50,9 +64,9 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      // TODO: Implement profile update API
+      // Example: send updated profile data to backend
+      await api.updateUserProfile(formData);
       setIsEditing(false);
-      // For now, just update local state
       if (user) {
         setUser({
           ...user,
@@ -62,7 +76,8 @@ const Profile = () => {
         });
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to update profile";
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to update profile";
       setError(errorMessage);
     }
   };
@@ -73,6 +88,12 @@ const Profile = () => {
         name: user.name,
         email: user.email,
         phone: user.phone || "",
+        bloodType: user.bloodType || "",
+        allergies: user.allergies || "",
+        conditions: user.conditions || "",
+        emergencyName: user.emergencyName || "",
+        emergencyRelation: user.emergencyRelation || "",
+        emergencyPhone: user.emergencyPhone || "",
       });
     }
     setIsEditing(false);
@@ -92,9 +113,7 @@ const Profile = () => {
       <div className="min-h-full bg-muted/20 flex items-center justify-center">
         <div className="text-center">
           <p className="text-destructive mb-4">{error}</p>
-          <Button onClick={() => window.location.reload()}>
-            Try Again
-          </Button>
+          <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       </div>
     );
@@ -105,9 +124,7 @@ const Profile = () => {
       <div className="min-h-full bg-muted/20 flex items-center justify-center">
         <div className="text-center">
           <p className="text-muted-foreground mb-4">No user data found</p>
-          <Button onClick={() => window.location.reload()}>
-            Reload
-          </Button>
+          <Button onClick={() => window.location.reload()}>Reload</Button>
         </div>
       </div>
     );
@@ -136,7 +153,6 @@ const Profile = () => {
       {/* Content */}
       <div className="container mx-auto px-4 lg:px-8 py-8">
         <div className="max-w-4xl mx-auto space-y-6">
-          {/* Profile Card */}
           <div className="bg-card rounded-xl p-8 shadow-soft border border-border">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6 mb-8">
               <div className="relative">
@@ -152,7 +168,9 @@ const Profile = () => {
 
               <div className="flex-1 text-center md:text-left">
                 <h2 className="text-2xl font-bold mb-1">{user.name}</h2>
-                <p className="text-muted-foreground mb-4">Patient ID: #{user.user_id}</p>
+                <p className="text-muted-foreground mb-4">
+                  Patient ID: #{user.user_id}
+                </p>
                 <div className="flex flex-wrap gap-3 justify-center md:justify-start">
                   <div className="flex items-center gap-2 text-sm">
                     <Mail className="h-4 w-4 text-primary" />
@@ -176,11 +194,16 @@ const Profile = () => {
                 </h3>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">Full Name</Label>
+                    <Label htmlFor="name">Full Name</Label>
                     <Input
-                      id="firstName"
+                      id="name"
                       value={formData.name}
-                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
                       disabled={!isEditing}
                     />
                   </div>
@@ -192,7 +215,12 @@ const Profile = () => {
                         id="email"
                         type="email"
                         value={formData.email}
-                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
                         className="pl-10"
                         disabled={!isEditing}
                       />
@@ -206,7 +234,12 @@ const Profile = () => {
                         id="phone"
                         type="tel"
                         value={formData.phone}
-                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
                         className="pl-10"
                         disabled={!isEditing}
                       />
@@ -223,11 +256,33 @@ const Profile = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="bloodType">Blood Type</Label>
-                    <Input id="bloodType" placeholder="Not specified" disabled />
+                    <Input
+                      id="bloodType"
+                      placeholder="Not specified"
+                      value={formData.bloodType}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          bloodType: e.target.value,
+                        }))
+                      }
+                      disabled={!isEditing}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="allergies">Allergies</Label>
-                    <Input id="allergies" placeholder="None" disabled />
+                    <Input
+                      id="allergies"
+                      placeholder="None"
+                      value={formData.allergies}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          allergies: e.target.value,
+                        }))
+                      }
+                      disabled={!isEditing}
+                    />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="conditions">Medical Conditions</Label>
@@ -235,7 +290,14 @@ const Profile = () => {
                       id="conditions"
                       placeholder="No medical conditions specified"
                       rows={3}
-                      disabled
+                      value={formData.conditions}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          conditions: e.target.value,
+                        }))
+                      }
+                      disabled={!isEditing}
                     />
                   </div>
                 </div>
@@ -249,11 +311,33 @@ const Profile = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="emergencyName">Contact Name</Label>
-                    <Input id="emergencyName" placeholder="Not specified" disabled />
+                    <Input
+                      id="emergencyName"
+                      placeholder="Not specified"
+                      value={formData.emergencyName}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          emergencyName: e.target.value,
+                        }))
+                      }
+                      disabled={!isEditing}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="emergencyRelation">Relationship</Label>
-                    <Input id="emergencyRelation" placeholder="Not specified" disabled />
+                    <Input
+                      id="emergencyRelation"
+                      placeholder="Not specified"
+                      value={formData.emergencyRelation}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          emergencyRelation: e.target.value,
+                        }))
+                      }
+                      disabled={!isEditing}
+                    />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="emergencyPhone">Phone Number</Label>
@@ -264,7 +348,14 @@ const Profile = () => {
                         type="tel"
                         placeholder="Not specified"
                         className="pl-10"
-                        disabled
+                        value={formData.emergencyPhone}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            emergencyPhone: e.target.value,
+                          }))
+                        }
+                        disabled={!isEditing}
                       />
                     </div>
                   </div>
