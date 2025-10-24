@@ -1,5 +1,4 @@
 from sentence_transformers import SentenceTransformer
-<<<<<<< HEAD
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -194,25 +193,3 @@ if __name__ == "__main__":
     import uvicorn
     print(f"Starting server on port {PORT}...")
     uvicorn.run(app, host="0.0.0.0", port=PORT)
-=======
-from fastapi import FastAPI
-from pydantic import BaseModel
-import uvicorn
-import dotenv
-
-app = FastAPI()
-model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-
-class EmbedRequest(BaseModel):
-    text: str
-
-@app.post("/embed")
-def embed(req: EmbedRequest):
-    embedding = model.encode(req.text).tolist()
-    return {"embedding": embedding}
-
-if __name__ == "__main__":
-    port = dotenv.get_key("backend\.env", "MICROSERVICE_PORT")
-    print(port)
-    uvicorn.run(app, host="0.0.0.0", port=port if port else 8000)
->>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
