@@ -1,4 +1,5 @@
 interface GooglePlaceResult {
+    id: string;
     displayName: {
         text: string;
     };
@@ -10,35 +11,78 @@ interface GooglePlaceResult {
     rating?: number;
     userRatingCount?: number;
     businessStatus: string;
-    id: string;
     types?: string[];
 }
+interface NearbySearchOptions {
+    latitude: number;
+    longitude: number;
+    radiusMeters?: number;
+    types?: string[];
+    maxResultCount?: number;
+    ranking?: 'DISTANCE' | 'POPULARITY';
+    regionCode?: string;
+    languageCode?: string;
+}
+interface NearbySearchResult {
+    places: GooglePlaceResult[];
+    meta: {
+        query: Omit<NearbySearchOptions, 'latitude' | 'longitude'> & {
+            latitude: number;
+            longitude: number;
+        };
+    };
+}
+export interface GeocodeResult {
+    lat: number;
+    lng: number;
+    formattedAddress?: string | undefined;
+    placeId?: string | undefined;
+}
+type DirectionsLeg = {
+    distanceText: string;
+    durationText: string;
+    startAddress: string;
+    endAddress: string;
+    steps: {
+        htmlInstruction: string;
+        distanceText: string;
+        durationText: string;
+        polyline: string;
+    }[];
+};
+type DirectionsResponse = {
+    distanceText: string;
+    durationText: string;
+    polyline: string;
+    legs: DirectionsLeg[];
+};
 export declare class GooglePlacesService {
     private apiKey;
     private baseUrl;
+    private geocodeUrl;
+    private directionsUrl;
     constructor();
-    searchNearbyHospitals(latitude: number, longitude: number, radius?: number, type?: string): Promise<GooglePlaceResult[]>;
+    private calculateDistance;
+    private deriveCategory;
+    private logCall;
+    searchNearby(options: NearbySearchOptions): Promise<NearbySearchResult>;
+    searchNearbyHospitals(latitude: number, longitude: number, radiusMeters?: number, type?: string): Promise<GooglePlaceResult[]>;
     getPlaceDetails(placeId: string): Promise<any>;
-    textSearch(query: string): Promise<any[]>;
-    saveClinicsToSupabase(places: GooglePlaceResult[]): Promise<any[]>;
+    saveClinicsToSupabase(places: GooglePlaceResult[], userLat?: number, userLng?: number): Promise<any[]>;
     updateClinicDetails(placeId: string, details: any): Promise<any>;
-    getCachedClinics(latitude: number, longitude: number, radiusKm?: number): Promise<any[]>;
+    getCachedClinics(latitude: number, longitude: number, radiusKm?: number, typeList?: string[]): Promise<any[]>;
     getDirections(origin: {
         lat: number;
         lng: number;
     }, destination: {
         lat: number;
         lng: number;
-    }): Promise<{
-        distance: string;
-        duration: string;
-        polyline: string;
-    }>;
-    geocodeAddress(address: string): Promise<{
+    }): Promise<DirectionsResponse>;
+    geocodeAddress(address: string): Promise<GeocodeResult>;
+    reverseGeocode(coords: {
         lat: number;
         lng: number;
-    }>;
-    reverseGeocode(lat: number, lng: number): Promise<string>;
+    }): Promise<GeocodeResult>;
 }
 export declare const googlePlacesService: GooglePlacesService;
 export {};

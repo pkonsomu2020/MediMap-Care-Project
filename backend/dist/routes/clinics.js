@@ -6,16 +6,21 @@ const googlePlaces_1 = require("../services/googlePlaces");
 const router = (0, express_1.Router)();
 router.get('/', async (req, res) => {
     try {
-        const { q, min_rating } = req.query;
+        const { q, min_rating, limit, offset } = req.query;
         const filters = {};
-        if (typeof q === 'string')
+        if (q)
             filters.q = q;
-        if (typeof min_rating === 'string' && min_rating.length > 0)
+        if (min_rating)
             filters.min_rating = parseFloat(min_rating);
+        if (limit)
+            filters.limit = parseInt(limit, 10);
+        if (offset)
+            filters.offset = parseInt(offset, 10);
         const clinics = await (0, data_1.listClinicsDb)(filters);
         return res.json(clinics);
     }
     catch (error) {
+        console.error("Error fetching clinics:", error);
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -23,6 +28,22 @@ router.get('/:id', async (req, res) => {
     try {
         const id = Number(req.params.id);
         const clinic = await (0, data_1.getClinicDb)(id);
+        if (!clinic) {
+            return res.status(404).json({ error: 'Clinic not found' });
+        }
+        return res.json(clinic);
+    }
+    catch (error) {
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+router.get('/place/:placeId', async (req, res) => {
+    try {
+        const { placeId } = req.params;
+        if (!placeId) {
+            return res.status(400).json({ error: 'placeId is required' });
+        }
+        const clinic = await (0, data_1.getClinicByGooglePlaceId)(placeId);
         if (!clinic) {
             return res.status(404).json({ error: 'Clinic not found' });
         }
@@ -67,7 +88,7 @@ router.post('/discover', async (req, res) => {
         if (uniquePlaces.length === 0) {
             return res.json([]);
         }
-        const savedClinics = await googlePlaces_1.googlePlacesService.saveClinicsToSupabase(uniquePlaces);
+        const savedClinics = await googlePlaces_1.googlePlacesService.saveClinicsToSupabase(uniquePlaces, parseFloat(lat), parseFloat(lng));
         return res.status(200).json(savedClinics);
     }
     catch (error) {

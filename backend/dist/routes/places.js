@@ -4,49 +4,59 @@ const express_1 = require("express");
 const googlePlaces_1 = require("../services/googlePlaces");
 const router = (0, express_1.Router)();
 router.get('/nearby', async (req, res) => {
-    console.log('📍 [/api/places/nearby] Request received:', req.query);
     try {
-        const { lat, lng, radius = '5000', type = 'hospital' } = req.query;
+        const { lat, lng, radiusKm = '5', radiusMode = 'preset', types, ranking, maxResults, skipCache, } = req.query;
         if (!lat || !lng) {
-            console.error(' Missing lat/lng parameters');
-            return res.status(400).json({
-                error: 'Latitude and longitude are required'
-            });
+            return res.status(400).json({ error: 'Latitude and longitude are required' });
         }
-        const latitude = parseFloat(lat);
-        const longitude = parseFloat(lng);
-        const radiusMeters = parseInt(radius);
-        if (isNaN(latitude) || isNaN(longitude) || isNaN(radiusMeters)) {
-            return res.status(400).json({
-                error: 'Invalid latitude, longitude, or radius'
-            });
+        const latitude = Number(lat);
+        const longitude = Number(lng);
+        const radiusKmNumber = Number(radiusKm);
+        const radiusMeters = Math.max(0.1, radiusKmNumber) * 1000;
+        const maxResultCount = maxResults ? Number(maxResults) : 20;
+        const typeList = types ? types.split(',').map((t) => t.trim()).filter(Boolean) : undefined;
+        const shouldBypassCache = skipCache === 'true' || radiusMode === 'drag';
+        if (Number.isNaN(latitude) || Number.isNaN(longitude) || Number.isNaN(radiusKmNumber)) {
+            return res.status(400).json({ error: 'Invalid latitude, longitude, or radius' });
         }
-        const cachedClinics = await googlePlaces_1.googlePlacesService.getCachedClinics(latitude, longitude, radiusMeters / 1000);
-        if (cachedClinics.length >= 5) {
-            console.log(` Returning ${cachedClinics.length} cached clinics`);
-            res.setHeader('Cache-Control', 'no-store');
-            return res.json({
-                clinics: cachedClinics,
-                source: 'cache',
-                count: cachedClinics.length
-            });
+        const debug = {
+            query: { latitude, longitude, radiusKm: radiusKmNumber, radiusMode, types: typeList, ranking, maxResultCount, skipCache: shouldBypassCache },
+            source: 'cache',
+        };
+        let clinics = [];
+        if (!shouldBypassCache) {
+            clinics = await googlePlaces_1.googlePlacesService.getCachedClinics(latitude, longitude, radiusKmNumber, typeList);
         }
-        console.log('📡 Cache insufficient, fetching from Google Places API...');
-        const places = await googlePlaces_1.googlePlacesService.searchNearbyHospitals(latitude, longitude, radiusMeters, type);
-        const savedClinics = await googlePlaces_1.googlePlacesService.saveClinicsToSupabase(places);
-        console.log(` Returning ${savedClinics.length} clinics from Google Places`);
+        if (clinics.length < 5 || shouldBypassCache) {
+            const searchRanking = ranking || 'DISTANCE';
+            const nearbyResult = await googlePlaces_1.googlePlacesService.searchNearby({
+                latitude,
+                longitude,
+                radiusMeters,
+                maxResultCount,
+                ...(typeList && typeList.length > 0 ? { types: typeList } : {}),
+                ranking: searchRanking,
+            });
+            clinics = await googlePlaces_1.googlePlacesService.saveClinicsToSupabase(nearbyResult.places, latitude, longitude);
+            debug.source = 'google_places';
+            debug.placesMeta = nearbyResult.meta;
+            debug.placeCount = nearbyResult.places.length;
+            debug.ranking = searchRanking;
+        }
+        else {
+            debug.cachedCount = clinics.length;
+        }
         res.setHeader('Cache-Control', 'no-store');
         return res.json({
-            clinics: savedClinics,
-            source: 'google_places',
-            count: savedClinics.length
+            clinics,
+            debug,
         });
     }
     catch (error) {
-        console.error(' Error fetching nearby places:', error);
+        console.error('Error fetching nearby places:', error);
         return res.status(500).json({
             error: 'Failed to fetch nearby places',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 });
@@ -63,28 +73,7 @@ router.get('/details/:placeId', async (req, res) => {
         console.error('Error fetching place details:', error);
         return res.status(500).json({
             error: 'Failed to fetch place details',
-            details: error instanceof Error ? error.message : 'Unknown error'
-        });
-    }
-});
-router.get('/text-search', async (req, res) => {
-    try {
-        const { query } = req.query;
-        if (!query || typeof query !== 'string') {
-            return res.status(400).json({ error: 'A text query is required' });
-        }
-        const results = await googlePlaces_1.googlePlacesService.textSearch(query);
-        return res.json({
-            clinics: results,
-            source: 'google_places_text_search',
-            count: results.length
-        });
-    }
-    catch (error) {
-        console.error('Error in text search route:', error);
-        return res.status(500).json({
-            error: 'Failed to perform text search',
-            details: error instanceof Error ? error.message : 'Unknown error'
+            details: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 });
@@ -120,34 +109,21 @@ router.get('/cached', async (req, res) => {
     }
 });
 router.post('/geocode', async (req, res) => {
-    const { address } = req.body;
-    console.log('📍 [/api/places/geocode] Request for address:', address);
-    if (!address) {
-        console.error('❌ No address provided');
-        return res.status(400).json({ error: 'Address is required' });
+    const { address, lat, lng } = req.body;
+    if (!address && (lat === undefined || lng === undefined)) {
+        return res.status(400).json({ error: 'Provide either an address or lat/lng coordinates.' });
     }
     try {
-        const location = await googlePlaces_1.googlePlacesService.geocodeAddress(address);
-        console.log('✅ Geocoded to:', location);
-        return res.json(location);
+        if (address) {
+            const result = await googlePlaces_1.googlePlacesService.geocodeAddress(address);
+            return res.json({ mode: 'forward', result });
+        }
+        const result = await googlePlaces_1.googlePlacesService.reverseGeocode({ lat: Number(lat), lng: Number(lng) });
+        return res.json({ mode: 'reverse', result });
     }
     catch (error) {
-        console.error('❌ [GEOCODE_ERROR]', error);
+        console.error('[GEOCODE_ERROR]', error);
         return res.status(500).json({ error: error.message || 'Failed to geocode address.' });
-    }
-});
-router.post('/reverse-geocode', async (req, res) => {
-    const { lat, lng } = req.body;
-    if (lat === undefined || lng === undefined) {
-        return res.status(400).json({ error: 'Latitude and longitude are required' });
-    }
-    try {
-        const address = await googlePlaces_1.googlePlacesService.reverseGeocode(lat, lng);
-        return res.json({ address });
-    }
-    catch (error) {
-        console.error('[REVERSE_GEOCODE_ERROR]', error);
-        return res.status(500).json({ error: error.message || 'Failed to reverse geocode coordinates.' });
     }
 });
 exports.default = router;

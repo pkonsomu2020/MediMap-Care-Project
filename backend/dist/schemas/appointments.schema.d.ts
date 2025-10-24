@@ -4,31 +4,19 @@ export declare const CreateAppointmentInput: z.ZodObject<{
     clinic_id: z.ZodNumber;
     date: z.ZodString;
     time: z.ZodString;
-    status: z.ZodOptional<z.ZodEnum<["pending", "confirmed", "cancelled"]>>;
-}, "strip", z.ZodTypeAny, {
-    user_id: number;
-    date: string;
-    time: string;
-    clinic_id: number;
-    status?: "pending" | "confirmed" | "cancelled" | undefined;
-}, {
-    user_id: number;
-    date: string;
-    time: string;
-    clinic_id: number;
-    status?: "pending" | "confirmed" | "cancelled" | undefined;
-}>;
+    status: z.ZodOptional<z.ZodEnum<{
+        pending: "pending";
+        confirmed: "confirmed";
+        cancelled: "cancelled";
+    }>>;
+}, z.core.$strip>;
 export declare const UpdateAppointmentInput: z.ZodObject<{
-    status: z.ZodOptional<z.ZodEnum<["pending", "confirmed", "cancelled"]>>;
+    status: z.ZodOptional<z.ZodEnum<{
+        pending: "pending";
+        confirmed: "confirmed";
+        cancelled: "cancelled";
+    }>>;
     date: z.ZodOptional<z.ZodString>;
     time: z.ZodOptional<z.ZodString>;
-}, "strip", z.ZodTypeAny, {
-    status?: "pending" | "confirmed" | "cancelled" | undefined;
-    date?: string | undefined;
-    time?: string | undefined;
-}, {
-    status?: "pending" | "confirmed" | "cancelled" | undefined;
-    date?: string | undefined;
-    time?: string | undefined;
-}>;
+}, z.core.$strip>;
 //# sourceMappingURL=appointments.schema.d.ts.map
