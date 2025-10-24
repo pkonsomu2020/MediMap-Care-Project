@@ -4,7 +4,6 @@ from datetime import date, time, timedelta, datetime
 from typing import List, Dict
 import bcrypt, json
 
-<<<<<<< HEAD
 from dotenv import load_dotenv, find_dotenv
 from supabase import create_client, Client
 import urllib.request, urllib.error
@@ -26,16 +25,6 @@ def get_supabase_client() -> Client:
 
 	url: str = os.environ.get("SUPABASE_URL")
 	key: str = os.environ.get("SUPABASE_ANON_KEY")
-=======
-from dotenv import load_dotenv
-from supabase import create_client, Client
-
-
-def get_supabase_client() -> Client:
-	load_dotenv()
-	url: str = os.environ.get("SUPABASE_URL")
-	key: str = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
->>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 	if not url or not key:
 		raise RuntimeError("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not set in environment")
 	return create_client(url, key)
@@ -71,17 +60,12 @@ def seed_users(supabase: Client, count: int = 10) -> List[int]:
 
 def seed_clinics(supabase: Client, count: int = 10) -> List[int]:
 	# Path to the scraper output
-<<<<<<< HEAD
 	DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "all_kmhfl_facilities_details.json")
-=======
-	DATA_PATH = "all_kmhfl_facilities_details.json"
->>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 
 	# ------------- LOAD & CLEAN DATA -------------
 	def transform(record):
 			"""Convert your scraper's data format into your table schema."""
 			name = record.get("name")
-<<<<<<< HEAD
 			contacts = record.get("contacts", []) # take first phone number if any
 			coords = record.get("coordinates", [None, None])
 			latitude, longitude = coords if len(coords) == 2 else (None, None)
@@ -119,29 +103,19 @@ def seed_clinics(supabase: Client, count: int = 10) -> List[int]:
 			if record.get("google_location", {}):
 				latitude = record["google_location"].get("lat", latitude)
 				longitude = record["google_location"].get("lng", longitude)
-=======
-			contact = record.get("contacts", [None])[0]  # take first phone number if any
-			coords = record.get("coordinates", [None, None])
-			latitude, longitude = coords if len(coords) == 2 else (None, None)
->>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 
 			# join service names into a comma-separated string
 			services = ", ".join([s["service"] for s in record.get("services", []) if s.get("service")])
 
 			return {
-<<<<<<< HEAD
 					"id": record.get("code", ""),
 					"name": name,
 					"category": f"{record.get('type', '')}",
-=======
-					"name": name,
->>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 					"address": f"{record.get('ward', '')}, {record.get('sub_county', '')}, {record.get('county', '')}".strip(", "),
 					"latitude": latitude,
 					"longitude": longitude,
 					"services": services,
 					"consultation_fee": None,
-<<<<<<< HEAD
 					"phone": contact["phone"], "email": contact["email"],
 					"source": f"KMHFL{', Google Maps' if record.get('google_name', '') else ''}",
 					"active": True if record.get("status", "").lower() == "operational" else False,
@@ -150,13 +124,6 @@ def seed_clinics(supabase: Client, count: int = 10) -> List[int]:
 
 	# ------------- MAIN INSERT FUNCTION -------------
 	def populate_clinics(add_embeddings: bool = False):
-=======
-					"contact": contact,
-			}
-
-	# ------------- MAIN INSERT FUNCTION -------------
-	def populate_clinics():
->>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 			with open(DATA_PATH, "r", encoding="utf-8") as f:
 					clinics = json.load(f)
 
@@ -174,18 +141,13 @@ def seed_clinics(supabase: Client, count: int = 10) -> List[int]:
 							continue
 
 					# Check for existing clinic (by name)
-<<<<<<< HEAD
 					existing = supabase.table("clinic").select("id").eq("name", data["name"]).execute()
-=======
-					existing = supabase.table("clinics").select("clinic_id").eq("name", data["name"]).execute()
->>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 
 					if existing.data:
 							skipped += 1
 							continue
 
 					# Insert new record
-<<<<<<< HEAD
 					try:
 						if add_embeddings:
 							try: # Create the embedding
@@ -211,14 +173,6 @@ def seed_clinics(supabase: Client, count: int = 10) -> List[int]:
 						
 					except:
 							print(f"Error inserting {data['name']}:")
-=======
-					res = supabase.table("clinics").insert(data).execute()
-					if res.error:
-							print(f"Error inserting {data['name']}: {res.error}")
-					else:
-							inserted += 1
-							print(f"Inserted: {data['name']}")
->>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 
 			print(f"\n✅ Done! Inserted: {inserted} of {len(clinics)}, Skipped: {skipped}")
 	
@@ -271,19 +225,11 @@ def seed_reviews(supabase: Client, user_ids: List[int], clinic_ids: List[int], c
 def main() -> None:
 	supabase = get_supabase_client()
 	# seed base tables first
-<<<<<<< HEAD
 	clinic_ids = seed_clinics(supabase, 10)
 	# dependent tables
 	# user_ids = seed_users(supabase, 10)
 	# seed_appointments(supabase, user_ids, clinic_ids, 10)
 	# seed_reviews(supabase, user_ids, clinic_ids, 10)
-=======
-	user_ids = seed_users(supabase, 10)
-	clinic_ids = seed_clinics(supabase, 10)
-	# dependent tables
-	seed_appointments(supabase, user_ids, clinic_ids, 10)
-	seed_reviews(supabase, user_ids, clinic_ids, 10)
->>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 	print("Seeding complete.")
 
 
