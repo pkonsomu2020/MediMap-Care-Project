@@ -15,6 +15,7 @@ bun-debug.log*
 
 # Environment variables
 .env
+.test_env
 .env*.local
 
 # IDE
