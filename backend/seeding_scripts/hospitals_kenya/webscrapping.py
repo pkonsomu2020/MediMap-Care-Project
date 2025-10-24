@@ -11,8 +11,13 @@ It works in two main phases:
 Both phases write to JSON files incrementally (streaming mode) to minimize memory usage.
 This approach allows handling thousands of records without filling RAM.
 
+<<<<<<< HEAD
 Author: Me
 Date: Today
+=======
+Author: [Your Name]
+Date: [Today’s Date]
+>>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 """
 
 import json
@@ -21,7 +26,11 @@ import time
 import os
 from bs4 import BeautifulSoup
 import googlemaps
+<<<<<<< HEAD
 from dotenv import load_dotenv, find_dotenv
+=======
+from dotenv import load_dotenv
+>>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 from typing import List, Dict, Any
 # ============================================================
 # --- GLOBAL CONFIGURATION ---
@@ -46,6 +55,7 @@ HEADERS = {
 }
 
 # Places API
+<<<<<<< HEAD
 # ✅ Load environment file (auto-detects absolute path)
 # This will search upward from the current file’s directory for ".test_env"
 env_path = find_dotenv(".test_env", raise_error_if_not_found=False)
@@ -57,6 +67,10 @@ else:
     load_dotenv(find_dotenv(".env", raise_error_if_not_found=False))
 
 
+=======
+dotenv_path = os.path.join(os.path.dirname(__file__), '..', '.env')
+load_dotenv(dotenv_path=dotenv_path)
+>>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
 # Output file paths
@@ -66,7 +80,11 @@ DETAIL_OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "all_kmhfl_faciliti
 
 # Optional runtime limits (for testing or controlled runs)
 MAX_PAGE_COUNT = 1              # Max number of pages to fetch (None = all)
+<<<<<<< HEAD
 MAX_FACILITIES_FOR_DETAIL = 1  # Max facilities for Phase 2 (None = all)
+=======
+MAX_FACILITIES_FOR_DETAIL = 3  # Max facilities for Phase 2 (None = all)
+>>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 
 
 # ============================================================
@@ -145,8 +163,12 @@ def google_find_place(place_name: str, detailed: bool= True) -> dict | None:
             return {
                 "formatted_address": search_result['candidates'][0]["formatted_address"],
                 "google_name": search_result['candidates'][0]["name"],
+<<<<<<< HEAD
                 "google_location": search_result['candidates'][0]["geometry"]["location"],
                 "google_place_id": search_result['candidates'][0]['place_id'],
+=======
+                "google_location": search_result['candidates'][0]["geometry"]["location"]
+>>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
                 }
         else:
             print(f"❌ No results found for '{place_name}'.")
@@ -221,6 +243,7 @@ def extract_facility_details(html: str, google_data:bool = True) -> dict:
     # Navigate to the facility-specific data object
     facility_data = data["props"]["pageProps"]["data"]
 
+<<<<<<< HEAD
     total_bed_count = 0
     total_theatre_count = 0
 
@@ -237,6 +260,8 @@ def extract_facility_details(html: str, google_data:bool = True) -> dict:
             elif "theatre" in key_lower:
                 total_theatre_count += value
 
+=======
+>>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
     # Extract the relevant facility details from the nested structure
     facility_info = {
         "id": facility_data.get("id"),
@@ -270,10 +295,13 @@ def extract_facility_details(html: str, google_data:bool = True) -> dict:
         "location_desc": facility_data.get("location_desc"),
         "catchment_population": facility_data.get("facility_catchment_population"),
         "date_established": facility_data.get("date_established"),
+<<<<<<< HEAD
         "total_bed_count": total_bed_count,
         "total_theatre_count": total_theatre_count,
         "nhif_accreditation": facility_data.get("nhif_accreditation"),
         "24hrs": True if facility_data.get("open_whole_day") else False,
+=======
+>>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
     }
 
     # Optionally enrich with Google Places data
@@ -448,7 +476,11 @@ def fetch_all_detail_data():
 
                 # The detail endpoint returns HTML; extract embedded JSON data
                 detail_data = extract_facility_details(response.text)
+<<<<<<< HEAD
                 # print(detail_data)
+=======
+                print(detail_data)
+>>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3
 
                 append_stream(DETAIL_OUTPUT_FILE, detail_data, is_first_entry=first_entry)
                 first_entry = False

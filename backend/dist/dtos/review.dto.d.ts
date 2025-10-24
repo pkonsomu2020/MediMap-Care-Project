@@ -1,8 +1,8 @@
-import Review from '../models/review';
+import { Review } from '../models/models';
 export declare function toReviewDTO(r: Review): {
-    review_id: number;
-    user_id: number;
-    clinic_id: number;
+    review_id: string;
+    user_id: string;
+    clinic_id: string;
     rating: number;
     comment: string | null;
 };

@@ -1,10 +1,10 @@
-import Appointment from '../models/appointment';
+import { Appointment } from '../models/models';
 export declare function toAppointmentDTO(a: Appointment): {
-    appointment_id: number;
-    user_id: number;
-    clinic_id: number;
+    appointment_id: string;
+    user_id: string;
+    clinic_id: string;
     date: string;
     time: string;
-    status: "pending" | "confirmed" | "cancelled";
+    status: "cancelled" | "completed" | "scheduled";
 };
 //# sourceMappingURL=appointment.dto.d.ts.map

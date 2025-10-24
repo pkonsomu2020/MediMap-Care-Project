@@ -1,9 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findUserByEmail = findUserByEmail;
+exports.findUserById = findUserById;
 exports.createUserDb = createUserDb;
+exports.updateUserById = updateUserById;
 exports.listClinicsDb = listClinicsDb;
 exports.getClinicDb = getClinicDb;
+exports.getClinicByGooglePlaceId = getClinicByGooglePlaceId;
 exports.createClinicDb = createClinicDb;
 exports.updateClinicDb = updateClinicDb;
 exports.deleteClinicDb = deleteClinicDb;
@@ -27,13 +30,63 @@ async function findUserByEmail(email) {
         throw error;
     return data || null;
 }
-async function createUserDb(payload) {
+async function findUserById(id) {
     const { data, error } = await supabase_1.serviceClient.from('users')
-        .insert({ name: payload.name, email: payload.email, phone: payload.phone ?? null, password: payload.password, role: payload.role ?? 'user' })
         .select('user_id, name, email, phone, role')
+        .eq('user_id', id)
+        .maybeSingle();
+    if (error)
+        throw error;
+    return data || null;
+}
+async function createUserDb(payload) {
+    const { data, error } = await supabase_1.serviceClient
+        .from("users")
+        .insert({
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone ?? null,
+        password: payload.password ?? null,
+        role: payload.role ?? "user",
+    })
+        .select("user_id, name, email, phone, role")
         .single();
     if (error)
         throw error;
+    return {
+        ...data,
+        password: "hidden",
+    };
+}
+async function updateUserById(userId, updates) {
+    const { data: columns } = await supabase_1.serviceClient
+        .from('users')
+        .select('*')
+        .limit(1);
+    if (!columns || columns.length === 0) {
+        throw new Error('Could not fetch user schema');
+    }
+    const existingKeys = Object.keys(columns[0]);
+    const filteredUpdates = {};
+    for (const key of Object.keys(updates)) {
+        if (existingKeys.includes(key)) {
+            filteredUpdates[key] = updates[key];
+        }
+    }
+    console.log('[updateUserById] Filtered updates:', filteredUpdates);
+    if (Object.keys(filteredUpdates).length === 0) {
+        throw new Error('No valid fields to update');
+    }
+    const { data, error } = await supabase_1.serviceClient
+        .from('users')
+        .update(filteredUpdates)
+        .eq('user_id', userId)
+        .select('*')
+        .maybeSingle();
+    if (error) {
+        console.error('[updateUserById] Supabase error:', error);
+        throw error;
+    }
     return data;
 }
 async function listClinicsDb(filters = {}) {
@@ -50,7 +103,18 @@ async function listClinicsDb(filters = {}) {
 }
 async function getClinicDb(id) {
     const { data, error } = await supabase_1.serviceClient.from('clinics')
-        .select('clinic_id, name, address, latitude, longitude, services, consultation_fee, contact, rating');
+        .select('clinic_id, name, address, latitude, longitude, services, consultation_fee, contact, rating')
+        .eq('clinic_id', id)
+        .maybeSingle();
+    if (error)
+        throw error;
+    return data || null;
+}
+async function getClinicByGooglePlaceId(googlePlaceId) {
+    const { data, error } = await supabase_1.serviceClient.from('clinics')
+        .select('clinic_id, name, address, latitude, longitude, services, consultation_fee, contact, rating')
+        .eq('google_place_id', googlePlaceId)
+        .maybeSingle();
     if (error)
         throw error;
     return data || null;
@@ -89,7 +153,15 @@ async function deleteClinicDb(id) {
 }
 async function listAppointmentsByUserDb(userId) {
     const { data, error } = await supabase_1.serviceClient.from('appointments')
-        .select('appointment_id, user_id, clinic_id, date, time, status')
+        .select(`
+      appointment_id,
+      user_id,
+      clinic_id,
+      date,
+      time,
+      status,
+      clinics!inner(clinic_id, name, address, contact)
+    `)
         .eq('user_id', userId)
         .order('date')
         .order('time');

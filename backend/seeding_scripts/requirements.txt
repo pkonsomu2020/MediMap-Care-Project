@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 beautifulsoup4==4.14.2
 requests==2.32.5
 googlemaps==4.10.0
@@ -8,3 +9,14 @@ fastapi==0.119.0
 uvicorn==0.37.0
 pydantic==2.12.2
 psycopg2==2.9.11
+=======
+json
+beautifulsoup4
+requests
+googlemaps
+supabase
+bcrypt
+sentence-transformers
+fastapi
+uvicorn
+>>>>>>> 4d8d84b1b246913aa07a0c37033434603325ead3

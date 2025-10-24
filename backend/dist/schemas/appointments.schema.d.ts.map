@@ -1,1 +1,1 @@
-{"version":3,"file":"appointments.schema.d.ts","sourceRoot":"","sources":["../../src/schemas/appointments.schema.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,eAAO,MAAM,sBAAsB;;;;;;;;;;;;;;;;;;EAMjC,CAAC;AAEH,eAAO,MAAM,sBAAsB;;;;;;;;;;;;EAIjC,CAAC"}
+{"version":3,"file":"appointments.schema.d.ts","sourceRoot":"","sources":["../../src/schemas/appointments.schema.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,eAAO,MAAM,sBAAsB;;;;;;;;;;iBAMjC,CAAC;AAEH,eAAO,MAAM,sBAAsB;;;;;;;;iBAIjC,CAAC"}

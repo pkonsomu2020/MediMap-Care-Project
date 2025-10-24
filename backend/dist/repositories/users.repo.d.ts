@@ -26,6 +26,27 @@ export declare function getById(userId: number): Promise<{
     phone: any;
     role: any;
 } | null>;
-export declare function getUserProfile(userId: number): Promise<any>;
-export declare function updateUserProfile(userId: number, profileData: any): Promise<any>;
+export declare function updateUserDb(userId: string | number, updates: Record<string, any>): Promise<{
+    user_id: any;
+    first_name: any;
+    last_name: any;
+    email: any;
+    phone: any;
+    gender: any;
+    date_of_birth: any;
+    address: any;
+    latitude: any;
+    longitude: any;
+    place_id: any;
+    blood_type: any;
+    allergies: any;
+    medications: any;
+    medical_conditions: any;
+    emergency_contact_name: any;
+    emergency_contact_phone: any;
+    emergency_contact_relationship: any;
+    profile_picture_url: any;
+    is_completed: any;
+    role: any;
+}>;
 //# sourceMappingURL=users.repo.d.ts.map

@@ -1,9 +1,9 @@
-import User from '../models/user';
+import { User } from '../models/models';
 export declare function toUserDTO(u: User): {
-    user_id: number;
+    user_id: string;
     name: any;
     email: string;
     phone: any;
-    role: "user" | "clinic" | "admin";
+    role: string;
 };
 //# sourceMappingURL=user.dto.d.ts.map
