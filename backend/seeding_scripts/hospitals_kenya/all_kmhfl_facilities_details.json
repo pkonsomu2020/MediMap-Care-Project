@@ -1,152 +1,18 @@
 [
 {
-    "id": "11a4d7db-5f0e-4841-adc9-e2d657c483aa",
-    "name": "Destiny Medical Centre",
-    "code": 23349,
+    "id": "e36b60e2-a97b-4545-8231-bf3246a48dd3",
+    "name": "Penda Medical Centre Umoja 1",
+    "code": 26043,
     "type": "Medical Clinic",
-    "owner": "Private Practice - Clinical Officer",
-    "county": "Kiambu",
-    "sub_county": "Githurai",
-    "ward": "Kahawa/Sukari",
+    "owner": "Private Practice - Medical Specialist",
+    "county": "Nairobi",
+    "sub_county": "Embakasi West",
+    "ward": "Umoja I",
     "keph_level": "Level 2",
     "status": "Operational",
     "admission_status": "Not Admitting Patients",
     "contacts": [
-        "0720960393"
-    ],
-    "services": [
-        {
-            "category": "CANCER SCREENING",
-            "service": "Breast"
-        },
-        {
-            "category": "CANCER SCREENING",
-            "service": "Prostate"
-        },
-        {
-            "category": "MENTAL HEALTH SERVICES",
-            "service": "Specialised Mental Health Services - Vocational and medical rehabilitation centres"
-        },
-        {
-            "category": "MENTAL HEALTH SERVICES",
-            "service": "Comprehensive Mental Health Service - integrated, promotive, preventive, curative and rehabilitative mental health services, medical assisted therapy"
-        },
-        {
-            "category": "MENTAL HEALTH SERVICES",
-            "service": "Basic Mental Health Services -Psychosocial interventions promotive, preventive mental health services"
-        },
-        {
-            "category": "SPECIALIZED OUTPATIENTS CLINIC",
-            "service": "Psychiatric clinic"
-        },
-        {
-            "category": "THEATRE SERVICES",
-            "service": "Minor Theatre Services"
-        },
-        {
-            "category": "FAMILY PLANNING",
-            "service": "Short Acting Method"
-        },
-        {
-            "category": "FAMILY PLANNING",
-            "service": "Permanent"
-        },
-        {
-            "category": "CURATIVE SERVICES",
-            "service": "General Outpatient"
-        },
-        {
-            "category": "HIV/AIDS PREVENTION AND CARE SERVICES",
-            "service": "HIV Counselling & Testing"
-        },
-        {
-            "category": "HIV/AIDS PREVENTION AND CARE SERVICES",
-            "service": "Condom Distribution & STI Prevention"
-        }
-    ],
-    "infrastructure": [
-        "Wi-Fi",
-        "Autoclave",
-        "Utility Vehicle",
-        "Fridges",
-        "Burn Incenerator",
-        "Tarmac",
-        "TV Screen",
-        "Wireless Mobile Facility",
-        "Teleconferencing Facility",
-        "Fibre (WAN)",
-        "Hand Held Devices( Tablets, Phones)",
-        "Laptops",
-        "Routers",
-        "Oxygen Cylinders",
-        "Boiler",
-        "Piped Water"
-    ],
-    "human_resources": [
-        {
-            "name": "Cleaners",
-            "category": "SUPPORT STAFF",
-            "count": 1
-        },
-        {
-            "name": "Secretaries",
-            "category": "HEALTH ADMINISTRATIVE STAFFS",
-            "count": 1
-        },
-        {
-            "name": "physiologist",
-            "category": "MEDICAL OFFICERS & SPECIALISTS",
-            "count": 1
-        },
-        {
-            "name": "CO Psychiatry/Mental Health",
-            "category": "CLINICAL OFFICERS",
-            "count": 1
-        },
-        {
-            "name": "General Clinical Officers(Diploma)",
-            "category": "CLINICAL OFFICERS",
-            "count": 2
-        },
-        {
-            "name": "Health Records and Information Technician",
-            "category": "HEALTH RECORDS AND INFORMATION",
-            "count": 1
-        },
-        {
-            "name": "Clinical psychologists",
-            "category": "CLINICAL PSYCHOLOGY",
-            "count": 1
-        }
-    ],
-    "coordinates": [
-        -1.194772,
-        36.947354
-    ],
-    "location_desc": "near Quickmat supermarket",
-    "catchment_population": 2397,
-    "date_established": "2015-07-15",
-    "formatted_address": "Nairobi City, Kenya",
-    "google_name": "Destiny Medical Center",
-    "google_location": {
-        "lat": -1.2339809,
-        "lng": 36.8843436
-    }
-},
-{
-    "id": "b5f4e1de-0066-4669-9566-bc592da1863d",
-    "name": "Tartar Dispensary",
-    "code": 34056,
-    "type": "Dispensary",
-    "owner": "Ministry of Health",
-    "county": "West Pokot",
-    "sub_county": "West Pokot",
-    "ward": "Mnagei",
-    "keph_level": "Level 2",
-    "status": "Operational",
-    "admission_status": "Not Admitting Patients",
-    "contacts": [
-        "0712490365"
+        "0793269677"
     ],
     "services": [
         {
@@ -154,134 +20,33 @@
             "service": "General Outpatient"
         },
         {
-            "category": "FAMILY PLANNING",
-            "service": "Short Acting Method"
+            "category": "ACCIDENT AND EMERGENCY CASUALTY SERVICES",
+            "service": "General Emergency Services"
         },
         {
-            "category": "FAMILY PLANNING",
-            "service": "Natural"
-        },
-        {
-            "category": "INTEGRATED MANAGEMENT OF CHILDHOOD ILLNESS",
-            "service": "Integrated Management of Newborn & Childhood Illnesses"
-        },
-        {
-            "category": "INTEGRATED MANAGEMENT OF CHILDHOOD ILLNESS",
-            "service": "Basic IMCI-management of acute Infections"
+            "category": "ANTENATAL CARE",
+            "service": "Focused Antenatal Care"
         }
     ],
-    "infrastructure": [
-        "Earthen Road",
-        "Tarmac",
-        "Main Grid",
-        "Piped Water"
-    ],
-    "human_resources": [
-        {
-            "name": "Kenya Registered Nurse",
-            "category": "NURSES AND SPECIALIST",
-            "count": 1
-        }
-    ],
+    "infrastructure": [],
+    "human_resources": [],
     "coordinates": [
-        1.2350227,
-        35.057108
+        -1.2842162,
+        36.8874286
     ],
-    "location_desc": "Next to Tartar girls high school",
-    "catchment_population": 2799,
-    "date_established": "2025-07-15",
-    "formatted_address": "Jogoo Rd, Makadara, Kenya",
-    "google_name": "Margaret Groundnuts",
+    "location_desc": "Umoja market along Moi drive stage,LR 88/1353",
+    "catchment_population": 3000,
+    "date_established": "2019-07-01",
+    "total_bed_count": 0,
+    "total_theatre_count": 0,
+    "nhif_accreditation": false,
+    "24hrs": true,
+    "formatted_address": "Umoja 1 / Jasho stage, Kenya",
+    "google_name": "Penda Medical Centre, Umoja 1 - #1 Affordable Quality Healthcare Medical, Lab and Pharmacy Services in Nairobi",
     "google_location": {
-        "lat": -1.2952017,
-        "lng": 36.85437659999999
-    }
-},
-{
-    "id": "d8965cac-201e-4b1f-ac37-f9521b9c1f87",
-    "name": "Vital Fort Medical Center",
-    "code": 24612,
-    "type": "Medical Clinic",
-    "owner": "Private Practice - General Practitioner",
-    "county": "Kirinyaga",
-    "sub_county": "Kirinyaga West",
-    "ward": "Kariti",
-    "keph_level": "Level 2",
-    "status": "Operational",
-    "admission_status": "Not Admitting Patients",
-    "contacts": [
-        "0741634536",
-        "0727705145"
-    ],
-    "services": [
-        {
-            "category": "FAMILY PLANNING",
-            "service": "Short Acting Method"
-        },
-        {
-            "category": "CURATIVE SERVICES",
-            "service": "General Outpatient"
-        },
-        {
-            "category": "FAMILY PLANNING",
-            "service": "Long Acting Method"
-        },
-        {
-            "category": "PHARMACY SERVICES",
-            "service": "Hospital - Retail services"
-        },
-        {
-            "category": "HIV/AIDS PREVENTION AND CARE SERVICES",
-            "service": "HIV Counselling & Testing"
-        },
-        {
-            "category": "LABORATORY SERVICES",
-            "service": "Class C"
-        }
-    ],
-    "infrastructure": [
-        "TV Screen",
-        "Tarmac",
-        "Remove offsite",
-        "Piped Water",
-        "Mobile Phone",
-        "Main Grid",
-        "Computer (Desktops)"
-    ],
-    "human_resources": [
-        {
-            "name": "Medical Laboratory Technologists",
-            "category": "MEDICAL LABORATORY",
-            "count": 1
-        },
-        {
-            "name": "KRCHN",
-            "category": "NURSES AND SPECIALIST",
-            "count": 1
-        },
-        {
-            "name": "General Medical Officers",
-            "category": "MEDICAL OFFICERS & SPECIALISTS",
-            "count": 1
-        },
-        {
-            "name": "Cleaners",
-            "category": "SUPPORT STAFF",
-            "count": 1
-        }
-    ],
-    "coordinates": [
-        -0.66649,
-        37.20992
-    ],
-    "location_desc": "About 250 metres from Sagana Sub County Hospital",
-    "catchment_population": 470,
-    "date_established": "2018-10-23",
-    "formatted_address": "Ralph Bunche Rd, Nairobi, Kenya",
-    "google_name": "VitalRay Health Solutions",
-    "google_location": {
-        "lat": -1.295188,
-        "lng": 36.80685
-    }
+        "lat": -1.2842812,
+        "lng": 36.8870727
+    },
+    "google_place_id": "ChIJ0_kEv6wTLxgRZEH_f9GDABo"
 }
 ]

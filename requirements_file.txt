@@ -1,0 +1,9 @@
+json: Standard Library (Python 3.14.0)
+BeautifulSoup4: Not Installed
+requests: 2.32.5
+googlemaps: Not Installed
+supabase: Not Installed
+bcrypt: Not Installed
+sentence-transformers: 5.1.1
+fastapi: 0.119.0
+uvicorn: 0.37.0
