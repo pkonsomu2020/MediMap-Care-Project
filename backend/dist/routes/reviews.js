@@ -2,7 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const data_1 = require("../lib/data");
+<<<<<<< HEAD
 const auth_1 = require("../middleware/auth");
+=======
+>>>>>>> vector_search
 const router = (0, express_1.Router)();
 router.get('/clinic/:clinicId', async (req, res) => {
     try {
@@ -21,10 +24,17 @@ router.get('/clinic/:clinicId', async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+<<<<<<< HEAD
 router.post('/', auth_1.authMiddleware, async (req, res) => {
     const { clinic_id, rating, comment } = req.body;
     if (!clinic_id || !rating) {
         return res.status(400).json({ error: 'clinic_id and rating are required' });
+=======
+router.post('/', async (req, res) => {
+    const { user_id, clinic_id, rating, comment } = req.body;
+    if (!user_id || !clinic_id || !rating) {
+        return res.status(400).json({ error: 'user_id, clinic_id, and rating are required' });
+>>>>>>> vector_search
     }
     const clinicIdNumber = parseInt(clinic_id);
     if (isNaN(clinicIdNumber)) {
@@ -38,7 +48,11 @@ router.post('/', auth_1.authMiddleware, async (req, res) => {
         if (!clinic) {
             return res.status(404).json({ error: 'Clinic not found' });
         }
+<<<<<<< HEAD
         const review = await (0, data_1.createReviewDb)({ user_id: req.auth.userId, clinic_id: clinicIdNumber, rating, comment });
+=======
+        const review = await (0, data_1.createReviewDb)({ user_id, clinic_id: clinicIdNumber, rating, comment });
+>>>>>>> vector_search
         return res.status(201).json(review);
     }
     catch (error) {

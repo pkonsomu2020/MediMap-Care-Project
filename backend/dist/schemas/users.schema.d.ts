@@ -4,6 +4,7 @@ export declare const RegisterInput: z.ZodObject<{
     email: z.ZodString;
     phone: z.ZodOptional<z.ZodString>;
     password: z.ZodString;
+<<<<<<< HEAD
     role: z.ZodOptional<z.ZodEnum<{
         user: "user";
         clinic: "clinic";
@@ -23,4 +24,30 @@ export declare const UserUpdateInput: z.ZodObject<{
     address: z.ZodOptional<z.ZodString>;
     dob: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
+=======
+    role: z.ZodOptional<z.ZodEnum<["user", "clinic", "admin"]>>;
+}, "strip", z.ZodTypeAny, {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string | undefined;
+    role?: "user" | "clinic" | "admin" | undefined;
+}, {
+    name: string;
+    email: string;
+    password: string;
+    phone?: string | undefined;
+    role?: "user" | "clinic" | "admin" | undefined;
+}>;
+export declare const LoginInput: z.ZodObject<{
+    email: z.ZodString;
+    password: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    email: string;
+    password: string;
+}, {
+    email: string;
+    password: string;
+}>;
+>>>>>>> vector_search
 //# sourceMappingURL=users.schema.d.ts.map

@@ -1,6 +1,9 @@
 // frontend/src/pages/dashboard/FindClinics.tsx
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Search, MapPin, Star, Clock, Phone, Navigation, Route, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+// frontend/src/pages/dashboard/FindClinics.tsx
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { Search, MapPin, Star, Clock, Phone, Navigation, Route, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -60,10 +63,61 @@ type NormalizedClinic = ReturnType<typeof useClinicsSearch> extends infer R
       : any
     : any
   : any;
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { AdvancedMarker, useMap } from "@vis.gl/react-google-maps";
+import GoogleMapContainer from "@/components/map/GoogleMapContainer";
+import RadiusControls from "@/components/map/RadiusControls";
+import { useClinicsSearch } from "@/hooks/useClinicsSearch";
+import { useGeocode } from "@/hooks/useGeocode";
+import { useDirections } from "@/hooks/useDirections";
+import CustomInfoWindow from "@/components/dashboard/CustomInfoWindow";
+import PlaceDetailsInfoWindow from "@/components/dashboard/PlaceDetailsInfoWindow";
+import PinMarker from "@/components/map/PinMarker";
+
+// Haversine-ish approximate distance (straight-line) in km
+function computeDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+type NormalizedClinic = ReturnType<typeof useClinicsSearch> extends infer R
+  ? R extends { data: infer D }
+    ? D extends { normalized: infer N }
+      ? N extends Array<infer C>
+        ? C
+        : any
+      : any
+    : any
+  : any;
 
 const FindClinics = () => {
   // Search UI state
+  // Search UI state
   const [searchQuery, setSearchQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState("");
   const [locationQuery, setLocationQuery] = useState("");
   const [selectedSpecialty, setSelectedSpecialty] = useState("all");
 
@@ -488,6 +542,18 @@ const FindClinics = () => {
               <Badge variant="secondary">Map powered by Google</Badge>
             </div>
           </div>
+        <div className="container mx-auto px-4 lg:px-8 py-6">
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-semibold">Find Clinics</h1>
+              <p className="text-muted-foreground text-sm">
+                Discover nearby clinics, set radius, and get directions.
+              </p>
+            </div>
+            <div className="hidden lg:flex items-center gap-2">
+              <Badge variant="secondary">Map powered by Google</Badge>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -496,6 +562,12 @@ const FindClinics = () => {
           {/* Filters Sidebar */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-card rounded-xl p-6 shadow-soft border border-border sticky top-24">
+              <div className="flex items-center gap-2 mb-6">
+                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <Search className="h-4 w-4 text-primary" />
+                </div>
+                <h2 className="font-semibold text-lg">Search & Filters</h2>
+              </div>
               <div className="flex items-center gap-2 mb-6">
                 <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
                   <Search className="h-4 w-4 text-primary" />
@@ -524,6 +596,11 @@ const FindClinics = () => {
                   <Input
                     placeholder="Search by clinic name or address"
                     className="pl-10"
+                    value={locationQuery}
+                    onChange={(e) => setLocationQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSearch();
+                    }}
                     value={locationQuery}
                     onChange={(e) => setLocationQuery(e.target.value)}
                     onKeyDown={(e) => {
@@ -598,15 +675,37 @@ const FindClinics = () => {
                   disabled={!hasUserLocation}
                   className="gap-2"
                 />
+              {/* Radius controls */}
+              <div className="space-y-3 mb-6">
+                <label className="text-sm font-medium text-foreground">Search Radius</label>
+                <RadiusControls
+                  radiusKm={radiusKm}
+                  setRadiusKm={setRadiusKm}
+                  radiusMode={radiusMode}
+                  setRadiusMode={setRadiusMode}
+                  disabled={!hasUserLocation}
+                  className="gap-2"
+                />
               </div>
 
+              {/* Specialty (types) */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-foreground">Healthcare Type</label>
               {/* Specialty (types) */}
               <div className="space-y-3">
                 <label className="text-sm font-medium text-foreground">Healthcare Type</label>
                 <Select value={selectedSpecialty} onValueChange={setSelectedSpecialty}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="All types" />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="All types" />
                   </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="hospital">🏥 Hospital</SelectItem>
+                    <SelectItem value="doctor">👨‍⚕️ Doctor</SelectItem>
+                    <SelectItem value="pharmacy">💊 Pharmacy</SelectItem>
+                    <SelectItem value="clinic">🏥 Clinic</SelectItem>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
                     <SelectItem value="hospital">🏥 Hospital</SelectItem>
@@ -619,6 +718,7 @@ const FindClinics = () => {
             </div>
           </div>
 
+          {/* Results and Map */}
           {/* Results and Map */}
           <div className="lg:col-span-2 space-y-4">
             {/* Map */}
@@ -734,7 +834,39 @@ const FindClinics = () => {
                       <MapPin className="h-5 w-5 md:h-6 md:w-6" />
                     </div>
                   </div>
+                  key={String(clinic.id)}
+                  className="bg-card rounded-xl p-4 md:p-6 shadow-soft border border-border flex flex-col md:flex-row gap-4 items-start"
+                >
+                  {/* Left icon / avatar box */}
+                  <div className="flex-shrink-0 rounded-lg w-16 h-16 md:w-20 md:h-20 bg-primary/10 flex items-center justify-center">
+                    <div className="w-10 h-10 md:w-12 md:h-12 rounded-md bg-primary flex items-center justify-center text-white">
+                      <MapPin className="h-5 w-5 md:h-6 md:w-6" />
+                    </div>
+                  </div>
 
+                  {/* Main content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-semibold text-lg">{clinic.name}</h3>
+                        <div className="flex items-center text-sm text-muted-foreground mt-1">
+                          <MapPin className="h-4 w-4 mr-2 flex-shrink-0" />
+                          <span className="truncate">
+                            {clinic.raw?.address || clinic.raw?.formattedAddress || "Address unavailable"}
+                          </span>
+                          {/* distance (approx) */}
+                          {clinic.position && userLocation && (
+                            <span className="ml-3 text-muted-foreground flex-shrink-0">
+                              •{" "}
+                              {computeDistanceKm(
+                                userLocation.lat,
+                                userLocation.lng,
+                                clinic.position.lat,
+                                clinic.position.lng
+                              ).toFixed(1)}{" "}
+                              km
+                            </span>
+                          )}
                   {/* Main content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2">
@@ -789,6 +921,39 @@ const FindClinics = () => {
                         {clinic.raw?.category || clinic.raw?.types?.[0] || "General"}
                       </div>
 
+                      <div className="text-sm text-left md:text-right flex-shrink-0">
+                        {clinic.raw?.is_active !== false ? (
+                          <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs">
+                            Available
+                          </span>
+                        ) : (
+                          <span className="inline-block px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-xs">
+                            Unavailable
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row md:items-center gap-4 mt-4">
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Star className="h-4 w-4 mr-2 text-amber-500 flex-shrink-0" />
+                        <span className="font-medium">
+                          {typeof clinic.rating === "number" ? clinic.rating.toFixed(1) : "N/A"}
+                        </span>
+                        <span className="ml-2 text-muted-foreground">
+                          ({clinic.raw?.userRatingCount || clinic.raw?.reviews_count || 0} reviews)
+                        </span>
+                      </div>
+
+                      <div className="px-3 py-1 rounded-full bg-muted/50 text-sm self-start">
+                        {clinic.raw?.category || clinic.raw?.types?.[0] || "General"}
+                      </div>
+
+                      {(clinic.distanceText || clinic.durationText) && (
+                        <div className="text-sm text-muted-foreground flex items-center">
+                          <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
+                          <span>
+                            {clinic.distanceText || "--"} • {clinic.durationText || "--"}
                       {(clinic.distanceText || clinic.durationText) && (
                         <div className="text-sm text-muted-foreground flex items-center">
                           <Clock className="h-4 w-4 mr-2 flex-shrink-0" />
@@ -796,6 +961,8 @@ const FindClinics = () => {
                             {clinic.distanceText || "--"} • {clinic.durationText || "--"}
                           </span>
                         </div>
+                      )}
+                    </div>
                       )}
                     </div>
 
@@ -869,6 +1036,134 @@ const FindClinics = () => {
           </div>
         </div>
       </div>
+
+      {/* Booking Dialog */}
+      <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Book Appointment</DialogTitle>
+            <DialogDescription>
+              Schedule an appointment at {selectedClinic?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Select Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "justify-start text-left font-normal",
+                      !bookingDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {bookingDate ? format(bookingDate, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={bookingDate}
+                    onSelect={setBookingDate}
+                    disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="grid gap-2">
+              <label className="text-sm font-medium">Select Time</label>
+              <Select value={bookingTime} onValueChange={setBookingTime}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a time slot" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeSlots.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setBookingDialogOpen(false)}
+              disabled={bookingLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleBookingSubmit}
+              disabled={bookingLoading || !bookingDate || !bookingTime}
+            >
+              {bookingLoading ? "Booking..." : "Book Appointment"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Details Dialog */}
+      <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{detailsClinic?.name}</DialogTitle>
+            <DialogDescription>
+              Clinic details and information
+            </DialogDescription>
+          </DialogHeader>
+          {detailsClinic && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Address</label>
+                <p className="text-sm text-muted-foreground">
+                  {detailsClinic.raw?.address || detailsClinic.raw?.formattedAddress || 'Address not provided'}
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Contact</label>
+                <p className="text-sm text-muted-foreground">
+                  {detailsClinic.raw?.contact || 'Contact information not available'}
+                </p>
+              </div>
+              <div className="grid gap-2">
+                <label className="text-sm font-medium">Rating</label>
+                <div className="flex items-center gap-2">
+                  <Star className="h-4 w-4 fill-accent text-accent" />
+                  <span className="font-semibold">
+                    {typeof detailsClinic.rating === 'number' ? detailsClinic.rating.toFixed(1) : 'N/A'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDetailsDialogOpen(false)}
+            >
+              Close
+            </Button>
+            {detailsClinic && (
+              <Button
+                onClick={() => {
+                  setDetailsDialogOpen(false);
+                  handleBookAppointment(detailsClinic);
+                }}
+              >
+                Book Appointment
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Booking Dialog */}
       <Dialog open={bookingDialogOpen} onOpenChange={setBookingDialogOpen}>

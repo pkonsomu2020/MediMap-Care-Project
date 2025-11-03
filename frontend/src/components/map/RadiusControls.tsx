@@ -25,7 +25,7 @@ export const RadiusControls: React.FC<RadiusControlsProps> = ({
   return (
     <div className={`space-y-3 ${className}`} role="group" aria-label="Radius controls">
       {/* Preset radius buttons */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         {PRESETS.map((km) => {
           const active = radiusMode === 'preset' && radiusKm === km;
           return (
@@ -50,7 +50,7 @@ export const RadiusControls: React.FC<RadiusControlsProps> = ({
       </div>
 
       {/* Drag mode toggle */}
-      <div className="flex justify-center">
+      <div className="flex flex-wrap gap-2">
         <Button
           type="button"
           variant={radiusMode === 'drag' ? 'default' : 'outline'}
@@ -58,7 +58,7 @@ export const RadiusControls: React.FC<RadiusControlsProps> = ({
           aria-pressed={radiusMode === 'drag'}
           aria-label="Enable drag radius mode"
           disabled={disabled}
-          className="w-full max-w-[120px]"
+          className="w-full"
           onClick={() => setRadiusMode(radiusMode === 'drag' ? 'preset' : 'drag')}
         >
           {radiusMode === 'drag' ? '🎯 Drag: On' : '🎯 Drag: Off'}

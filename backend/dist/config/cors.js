@@ -7,6 +7,7 @@ exports.buildCors = buildCors;
 const cors_1 = __importDefault(require("cors"));
 const env_1 = require("./env");
 function buildCors() {
+<<<<<<< HEAD
     const origin = env_1.env.CORS_ORIGIN || 'http://localhost:3000';
     const allowedOrigins = typeof origin === 'string' ? origin.split(',') : origin;
     const options = {
@@ -18,6 +19,12 @@ function buildCors() {
                 callback(new Error('Not allowed by CORS'));
             }
         },
+=======
+    const origin = env_1.env.CORS_ORIGIN || '*';
+    const allowedOrigins = typeof origin === 'string' ? origin.split(',') : origin;
+    const options = {
+        origin: allowedOrigins,
+>>>>>>> vector_search
         credentials: true,
     };
     return (0, cors_1.default)(options);

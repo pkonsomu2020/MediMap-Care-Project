@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 {"version":3,"file":"users.schema.d.ts","sourceRoot":"","sources":["../../src/schemas/users.schema.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,eAAO,MAAM,aAAa;;;;;;;;;;iBAMxB,CAAC;AAEH,eAAO,MAAM,UAAU;;;iBAGrB,CAAC;AAEH,eAAO,MAAM,eAAe;;;;;;;;iBAQ1B,CAAC"}
+=======
+{"version":3,"file":"users.schema.d.ts","sourceRoot":"","sources":["../../src/schemas/users.schema.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,CAAC,EAAE,MAAM,KAAK,CAAC;AAExB,eAAO,MAAM,aAAa;;;;;;;;;;;;;;;;;;EAMxB,CAAC;AAEH,eAAO,MAAM,UAAU;;;;;;;;;EAGrB,CAAC"}
+>>>>>>> vector_search

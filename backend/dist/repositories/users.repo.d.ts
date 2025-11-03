@@ -26,6 +26,7 @@ export declare function getById(userId: number): Promise<{
     phone: any;
     role: any;
 } | null>;
+<<<<<<< HEAD
 export declare function updateUserDb(userId: string | number, updates: Record<string, any>): Promise<{
     user_id: any;
     first_name: any;
@@ -49,4 +50,8 @@ export declare function updateUserDb(userId: string | number, updates: Record<st
     is_completed: any;
     role: any;
 }>;
+=======
+export declare function getUserProfile(userId: number): Promise<any>;
+export declare function updateUserProfile(userId: number, profileData: any): Promise<any>;
+>>>>>>> vector_search
 //# sourceMappingURL=users.repo.d.ts.map

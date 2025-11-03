@@ -2,18 +2,30 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const data_1 = require("../lib/data");
+<<<<<<< HEAD
 const auth_1 = require("../middleware/auth");
 const router = (0, express_1.Router)();
 router.get('/', auth_1.authMiddleware, async (req, res) => {
     try {
         const userId = req.auth.userId;
         const appointments = await (0, data_1.listAppointmentsByUserDb)(userId);
+=======
+const router = (0, express_1.Router)();
+router.get('/', async (req, res) => {
+    try {
+        const { userId } = req.query;
+        if (!userId) {
+            return res.status(400).json({ error: 'userId is required' });
+        }
+        const appointments = await (0, data_1.listAppointmentsByUserDb)(parseInt(userId));
+>>>>>>> vector_search
         return res.json(appointments);
     }
     catch (error) {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+<<<<<<< HEAD
 router.get('/:id', auth_1.authMiddleware, async (req, res) => {
     try {
         const id = req.params.id;
@@ -26,12 +38,21 @@ router.get('/:id', auth_1.authMiddleware, async (req, res) => {
         if (appointment.user_id !== req.auth.userId) {
             return res.status(403).json({ error: 'Forbidden' });
         }
+=======
+router.get('/:id', async (req, res) => {
+    try {
+        const appointment = await (0, data_1.getAppointmentDb)(parseInt(req.params.id));
+        if (!appointment) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+>>>>>>> vector_search
         return res.json(appointment);
     }
     catch (error) {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+<<<<<<< HEAD
 router.post('/', auth_1.authMiddleware, async (req, res) => {
     const { place_id, clinic_id, date, time, status } = req.body;
     if ((!place_id && !clinic_id) || !date || !time) {
@@ -52,12 +73,25 @@ router.post('/', auth_1.authMiddleware, async (req, res) => {
             clinicId = clinic.clinic_id;
         }
         const appointment = await (0, data_1.createAppointmentDb)({ user_id: req.auth.userId, clinic_id: clinicId, date, time, status });
+=======
+router.post('/', async (req, res) => {
+    const { user_id, clinic_id, date, time, status } = req.body;
+    if (!user_id || !clinic_id || !date || !time) {
+        return res.status(400).json({ error: 'user_id, clinic_id, date and time are required' });
+    }
+    try {
+        const clinic = await (0, data_1.getClinicDb)(Number(clinic_id));
+        if (!clinic)
+            return res.status(400).json({ error: 'Invalid clinic_id' });
+        const appointment = await (0, data_1.createAppointmentDb)({ user_id, clinic_id, date, time, status });
+>>>>>>> vector_search
         return res.status(201).json(appointment);
     }
     catch (error) {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+<<<<<<< HEAD
 router.put('/:id', auth_1.authMiddleware, async (req, res) => {
     try {
         const id = req.params.id;
@@ -75,10 +109,22 @@ router.put('/:id', auth_1.authMiddleware, async (req, res) => {
             console.log('Updating status to:', req.body.status);
             allowed.status = req.body.status;
         }
+=======
+router.put('/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const existing = await (0, data_1.getAppointmentDb)(id);
+        if (!existing)
+            return res.status(404).json({ error: 'Appointment not found' });
+        const allowed = {};
+        if (req.body.status)
+            allowed.status = req.body.status;
+>>>>>>> vector_search
         if (req.body.date)
             allowed.date = req.body.date;
         if (req.body.time)
             allowed.time = req.body.time;
+<<<<<<< HEAD
         console.log('Updating appointment', appointmentId, 'with changes:', allowed);
         const updated = await (0, data_1.updateAppointmentDb)(appointmentId, allowed);
         console.log('Update result:', updated);
@@ -102,6 +148,22 @@ router.delete('/:id', auth_1.authMiddleware, async (req, res) => {
             return res.status(403).json({ error: 'Forbidden' });
         }
         await (0, data_1.deleteAppointmentDb)(appointmentId);
+=======
+        const updated = await (0, data_1.updateAppointmentDb)(id, allowed);
+        return res.json(updated);
+    }
+    catch (error) {
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+});
+router.delete('/:id', async (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const existing = await (0, data_1.getAppointmentDb)(id);
+        if (!existing)
+            return res.status(404).json({ error: 'Appointment not found' });
+        await (0, data_1.deleteAppointmentDb)(id);
+>>>>>>> vector_search
         return res.json({ message: 'Appointment deleted successfully' });
     }
     catch (error) {

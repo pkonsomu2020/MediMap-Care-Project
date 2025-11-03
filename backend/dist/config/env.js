@@ -12,6 +12,7 @@ const envSchema = zod_1.z.object({
     NODE_ENV: zod_1.z.enum(['development', 'test', 'production']).default('development'),
     PORT: zod_1.z.string().default('8001'),
     CORS_ORIGIN: zod_1.z.string().optional(),
+<<<<<<< HEAD
     SUPABASE_URL: zod_1.z.string().url({
         message: 'SUPABASE_URL is required and must be a valid URL',
     }),
@@ -28,6 +29,17 @@ const envSchema = zod_1.z.object({
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
     console.log(process.env);
+=======
+    SUPABASE_URL: zod_1.z.string().url().optional(),
+    SUPABASE_ANON_KEY: zod_1.z.string().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: zod_1.z.string().optional(),
+    JWT_SECRET: zod_1.z.string().optional(),
+    JWT_EXPIRES_IN: zod_1.z.string().optional(),
+    GOOGLE_MAPS_API_KEY: zod_1.z.string().optional(),
+});
+const parsed = envSchema.safeParse(process.env);
+if (!parsed.success) {
+>>>>>>> vector_search
     console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
     throw new Error('Invalid environment variables');
 }

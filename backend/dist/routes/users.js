@@ -6,9 +6,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+<<<<<<< HEAD
 const google_auth_library_1 = require("google-auth-library");
 const data_1 = require("../lib/data");
 const auth_1 = require("../middleware/auth");
+=======
+const data_1 = require("../lib/data");
+const auth_1 = require("../middleware/auth");
+const users_repo_1 = require("../repositories/users.repo");
+>>>>>>> vector_search
 const router = (0, express_1.Router)();
 router.post('/register', async (req, res) => {
     const { name, email, phone, password, role } = req.body;
@@ -41,9 +47,12 @@ router.post('/login', async (req, res) => {
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
+<<<<<<< HEAD
         if (user.password === 'google_oauth') {
             return res.status(401).json({ error: 'Please use Google login for this account' });
         }
+=======
+>>>>>>> vector_search
         const isMatch = await bcryptjs_1.default.compare(password, user.password);
         if (!isMatch) {
             return res.status(401).json({ error: 'Invalid credentials' });
@@ -57,6 +66,7 @@ router.post('/login', async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+<<<<<<< HEAD
 router.post('/google-login', async (req, res) => {
     const { id_token } = req.body;
     if (!id_token) {
@@ -90,11 +100,25 @@ router.post('/google-login', async (req, res) => {
             expiresIn: process.env.JWT_EXPIRES_IN || '7d',
         });
         return res.json({ token, user: { user_id: user.user_id, name: user.name, email: user.email, phone: user.phone, role: user.role } });
+=======
+router.get('/profile', auth_1.authMiddleware, async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        const profile = await (0, users_repo_1.getUserProfile)(userId);
+        if (!profile) {
+            return res.status(404).json({ error: 'Profile not found' });
+        }
+        return res.json(profile);
+>>>>>>> vector_search
     }
     catch (error) {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+<<<<<<< HEAD
 router.get('/me', auth_1.authMiddleware, async (req, res) => {
     try {
         const userId = req.auth.userId;
@@ -103,11 +127,22 @@ router.get('/me', auth_1.authMiddleware, async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         return res.json(user);
+=======
+router.put('/profile', auth_1.authMiddleware, async (req, res) => {
+    try {
+        const userId = req.auth?.userId;
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+        const updatedProfile = await (0, users_repo_1.updateUserProfile)(userId, req.body);
+        return res.json(updatedProfile);
+>>>>>>> vector_search
     }
     catch (error) {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+<<<<<<< HEAD
 router.patch('/me', auth_1.authMiddleware, async (req, res) => {
     try {
         const userId = req.auth.userId;
@@ -147,5 +182,7 @@ router.patch('/me', auth_1.authMiddleware, async (req, res) => {
         });
     }
 });
+=======
+>>>>>>> vector_search
 exports.default = router;
 //# sourceMappingURL=users.js.map

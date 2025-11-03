@@ -6,6 +6,7 @@ const googlePlaces_1 = require("../services/googlePlaces");
 const router = (0, express_1.Router)();
 router.get('/', async (req, res) => {
     try {
+<<<<<<< HEAD
         const { q, min_rating, limit, offset } = req.query;
         const filters = {};
         if (q)
@@ -16,11 +17,22 @@ router.get('/', async (req, res) => {
             filters.limit = parseInt(limit, 10);
         if (offset)
             filters.offset = parseInt(offset, 10);
+=======
+        const { q, min_rating } = req.query;
+        const filters = {};
+        if (typeof q === 'string')
+            filters.q = q;
+        if (typeof min_rating === 'string' && min_rating.length > 0)
+            filters.min_rating = parseFloat(min_rating);
+>>>>>>> vector_search
         const clinics = await (0, data_1.listClinicsDb)(filters);
         return res.json(clinics);
     }
     catch (error) {
+<<<<<<< HEAD
         console.error("Error fetching clinics:", error);
+=======
+>>>>>>> vector_search
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -37,6 +49,7 @@ router.get('/:id', async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+<<<<<<< HEAD
 router.get('/place/:placeId', async (req, res) => {
     try {
         const { placeId } = req.params;
@@ -53,6 +66,8 @@ router.get('/place/:placeId', async (req, res) => {
         return res.status(500).json({ error: 'Internal server error' });
     }
 });
+=======
+>>>>>>> vector_search
 router.post('/', async (req, res) => {
     const { name, address, latitude, longitude, services, consultation_fee, contact } = req.body;
     if (!name || latitude === undefined || longitude === undefined) {
@@ -88,7 +103,11 @@ router.post('/discover', async (req, res) => {
         if (uniquePlaces.length === 0) {
             return res.json([]);
         }
+<<<<<<< HEAD
         const savedClinics = await googlePlaces_1.googlePlacesService.saveClinicsToSupabase(uniquePlaces, parseFloat(lat), parseFloat(lng));
+=======
+        const savedClinics = await googlePlaces_1.googlePlacesService.saveClinicsToSupabase(uniquePlaces);
+>>>>>>> vector_search
         return res.status(200).json(savedClinics);
     }
     catch (error) {

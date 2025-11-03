@@ -1,12 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.findUserByEmail = findUserByEmail;
+<<<<<<< HEAD
 exports.findUserById = findUserById;
 exports.createUserDb = createUserDb;
 exports.updateUserById = updateUserById;
 exports.listClinicsDb = listClinicsDb;
 exports.getClinicDb = getClinicDb;
 exports.getClinicByGooglePlaceId = getClinicByGooglePlaceId;
+=======
+exports.createUserDb = createUserDb;
+exports.listClinicsDb = listClinicsDb;
+exports.getClinicDb = getClinicDb;
+>>>>>>> vector_search
 exports.createClinicDb = createClinicDb;
 exports.updateClinicDb = updateClinicDb;
 exports.deleteClinicDb = deleteClinicDb;
@@ -30,6 +36,7 @@ async function findUserByEmail(email) {
         throw error;
     return data || null;
 }
+<<<<<<< HEAD
 async function findUserById(id) {
     const { data, error } = await supabase_1.serviceClient.from('users')
         .select('user_id, name, email, phone, role')
@@ -87,6 +94,15 @@ async function updateUserById(userId, updates) {
         console.error('[updateUserById] Supabase error:', error);
         throw error;
     }
+=======
+async function createUserDb(payload) {
+    const { data, error } = await supabase_1.serviceClient.from('users')
+        .insert({ name: payload.name, email: payload.email, phone: payload.phone ?? null, password: payload.password, role: payload.role ?? 'user' })
+        .select('user_id, name, email, phone, role')
+        .single();
+    if (error)
+        throw error;
+>>>>>>> vector_search
     return data;
 }
 async function listClinicsDb(filters = {}) {
@@ -103,6 +119,7 @@ async function listClinicsDb(filters = {}) {
 }
 async function getClinicDb(id) {
     const { data, error } = await supabase_1.serviceClient.from('clinics')
+<<<<<<< HEAD
         .select('clinic_id, name, address, latitude, longitude, services, consultation_fee, contact, rating')
         .eq('clinic_id', id)
         .maybeSingle();
@@ -115,6 +132,9 @@ async function getClinicByGooglePlaceId(googlePlaceId) {
         .select('clinic_id, name, address, latitude, longitude, services, consultation_fee, contact, rating')
         .eq('google_place_id', googlePlaceId)
         .maybeSingle();
+=======
+        .select('clinic_id, name, address, latitude, longitude, services, consultation_fee, contact, rating');
+>>>>>>> vector_search
     if (error)
         throw error;
     return data || null;
@@ -153,6 +173,7 @@ async function deleteClinicDb(id) {
 }
 async function listAppointmentsByUserDb(userId) {
     const { data, error } = await supabase_1.serviceClient.from('appointments')
+<<<<<<< HEAD
         .select(`
       appointment_id,
       user_id,
@@ -162,6 +183,9 @@ async function listAppointmentsByUserDb(userId) {
       status,
       clinics!inner(clinic_id, name, address, contact)
     `)
+=======
+        .select('appointment_id, user_id, clinic_id, date, time, status')
+>>>>>>> vector_search
         .eq('user_id', userId)
         .order('date')
         .order('time');

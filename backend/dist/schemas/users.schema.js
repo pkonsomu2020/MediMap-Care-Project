@@ -1,6 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+<<<<<<< HEAD
 exports.UserUpdateInput = exports.LoginInput = exports.RegisterInput = void 0;
+=======
+exports.LoginInput = exports.RegisterInput = void 0;
+>>>>>>> vector_search
 const zod_1 = require("zod");
 exports.RegisterInput = zod_1.z.object({
     name: zod_1.z.string().min(1),
@@ -13,6 +17,7 @@ exports.LoginInput = zod_1.z.object({
     email: zod_1.z.string().email(),
     password: zod_1.z.string().min(6),
 });
+<<<<<<< HEAD
 exports.UserUpdateInput = zod_1.z.object({
     name: zod_1.z.string().min(1).optional(),
     email: zod_1.z.string().email().optional(),
@@ -22,4 +27,6 @@ exports.UserUpdateInput = zod_1.z.object({
     address: zod_1.z.string().optional(),
     dob: zod_1.z.string().optional(),
 });
+=======
+>>>>>>> vector_search
 //# sourceMappingURL=users.schema.js.map
