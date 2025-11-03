@@ -26,10 +26,11 @@ interface NearbySearchOptions {
 interface NearbySearchResult {
     places: GooglePlaceResult[];
     meta: {
-        query: Omit<NearbySearchOptions, 'latitude' | 'longitude'> & {
+        query: (Omit<NearbySearchOptions, 'latitude' | 'longitude'> & {
             latitude: number;
             longitude: number;
-        };
+            mixed?: boolean;
+        });
     };
 }
 export interface GeocodeResult {
@@ -37,6 +38,12 @@ export interface GeocodeResult {
     lng: number;
     formattedAddress?: string | undefined;
     placeId?: string | undefined;
+}
+export interface GeocodeMicroserviceResponse {
+    results?: GeocodeResult[];
+    result?: GeocodeResult;
+    status?: string;
+    message?: string;
 }
 type DirectionsLeg = {
     distanceText: string;
@@ -58,6 +65,7 @@ type DirectionsResponse = {
 };
 export declare class GooglePlacesService {
     private apiKey;
+    private clinicTable;
     private baseUrl;
     private geocodeUrl;
     private directionsUrl;
@@ -65,7 +73,7 @@ export declare class GooglePlacesService {
     private calculateDistance;
     private deriveCategory;
     private logCall;
-    searchNearby(options: NearbySearchOptions): Promise<NearbySearchResult>;
+    searchNearby(options: NearbySearchOptions, microOnly?: boolean): Promise<NearbySearchResult>;
     searchNearbyHospitals(latitude: number, longitude: number, radiusMeters?: number, type?: string): Promise<GooglePlaceResult[]>;
     getPlaceDetails(placeId: string): Promise<any>;
     saveClinicsToSupabase(places: GooglePlaceResult[], userLat?: number, userLng?: number): Promise<any[]>;
@@ -78,11 +86,11 @@ export declare class GooglePlacesService {
         lat: number;
         lng: number;
     }): Promise<DirectionsResponse>;
-    geocodeAddress(address: string): Promise<GeocodeResult>;
+    geocodeAddress(address: string, microOnly?: boolean): Promise<GeocodeResult[]>;
     reverseGeocode(coords: {
         lat: number;
         lng: number;
-    }): Promise<GeocodeResult>;
+    }, microOnly?: boolean): Promise<GeocodeResult>;
 }
 export declare const googlePlacesService: GooglePlacesService;
 export {};

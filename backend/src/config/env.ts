@@ -14,12 +14,15 @@ const envSchema = z.object({
     message: 'SUPABASE_URL is required and must be a valid URL',
   }),
   SUPABASE_ANON_KEY: z.string().optional(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, {
-    message: 'SUPABASE_SERVICE_ROLE_KEY is required',
+  // Change this to match your .env variable name
+  SUPABASE_SERVICE_KEY: z.string().min(1, {
+    message: 'SUPABASE_SERVICE_KEY is required',
   }),
   JWT_SECRET: z.string().optional(),
   JWT_EXPIRES_IN: z.string().optional(),
   GOOGLE_MAPS_API_KEY: z.string().optional(),
+  SUPABASE_CLINICS: z.string().optional(),
+  MICROSERVICE_PORT: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

@@ -39,6 +39,7 @@ interface Review {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001/api';
+const MICRO_SERVICE_URL = import.meta.env.MICROSERVICE_URL || 'http://localhost:8003/api'
 
 function getAuthToken(): string | null {
   try {
@@ -172,6 +173,35 @@ export const api = {
   },
   getPlaceDetails(placeId: string) {
     return request<any>(`/places/details/${placeId}`);
+  },
+
+  // Function that uses the embedding microservice for searching
+  async getSupabasePlace(params: { query: string; match_count: number }): Promise<any> {
+    const token = getAuthToken();
+    const res = await fetch(`${MICRO_SERVICE_URL}/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({
+        query: params.query,
+        match_count: params.match_count,
+      }),
+    });
+
+    if (!res.ok) {
+      let message = `Request failed with ${res.status}`;
+      try {
+        const body = await res.json();
+        message = body?.error || message;
+      } catch {
+        // ignore JSON parse errors
+      }
+      throw new Error(message);
+    }
+
+    return (await res.json()) as any;
   },
   // Forward geocode: returns { lat, lng, formattedAddress?, placeId? }
   geocodeAddress(address: string) {

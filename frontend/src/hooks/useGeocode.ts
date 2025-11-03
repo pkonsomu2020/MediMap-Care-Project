@@ -30,6 +30,8 @@ export function useGeocode() {
   const geocodeAddress = useCallback(async (address: string) => {
     setForward((s) => ({ ...s, loading: true, error: null }));
     try {
+      // const res1 = (await api.getSupabasePlace({query: address, match_count: 10}))
+      // console.log(res1)
       const res = await api.geocodeAddress(address);
       setForward({ loading: false, error: null, result: res });
       logApiResult('places.geocode', {

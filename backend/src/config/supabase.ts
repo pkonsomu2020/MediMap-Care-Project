@@ -3,8 +3,8 @@ import { env } from './env';
 
 // Service client (use sparingly; bypasses RLS). Requires SUPABASE_SERVICE_ROLE_KEY
 export const serviceClient: SupabaseClient | null =
-  env.SUPABASE_URL && env.SUPABASE_SERVICE_ROLE_KEY
-    ? createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY)
+  env.SUPABASE_URL && env.SUPABASE_ANON_KEY
+    ? createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY)
     : null;
 
 // Build a user-scoped client from the request token to honor RLS

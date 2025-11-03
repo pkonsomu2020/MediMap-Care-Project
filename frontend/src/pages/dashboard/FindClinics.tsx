@@ -87,19 +87,23 @@ const FindClinics = () => {
   const [bookingTime, setBookingTime] = useState<string>("");
   const [bookingLoading, setBookingLoading] = useState(false);
 
+  // Search results state - clinics found from search
+  const [searchResults, setSearchResults] = useState<NormalizedClinic[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   // Geocode helpers
   const { geocodeAddress, reverseGeocode, forward, reverse } = useGeocode();
 
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Fetch clinics via new hook
+  // Fetch clinics via new hook - for proximity-based results around user location
   const { data: clinicsData, isFetching: isClinicsFetching } = useClinicsSearch({
     userLocation: userLocation || undefined,
     radiusMode,
     radiusKm,
     types: selectedSpecialty === "all" ? undefined : [selectedSpecialty],
-    ranking: "DISTANCE", // Changed from POPULARITY to DISTANCE for proximity-based results
+    ranking: "DISTANCE",
     maxResults: 20,
     skipCache: radiusMode === "drag",
   });
@@ -127,9 +131,17 @@ const FindClinics = () => {
     return clinicsWithDistance.sort((a, b) => a.calculatedDistance - b.calculatedDistance);
   }, [clinicsData?.normalized, userLocation]);
 
+  // Combine both proximity results and search results
+  const displayClinics = useMemo(() => {
+    if (searchResults.length > 0) {
+      return searchResults;
+    }
+    return normalizedClinics;
+  }, [searchResults, normalizedClinics]);
+
   const activeClinic: NormalizedClinic | null = useMemo(
-    () => normalizedClinics.find((c) => String(c.id) === String(activeClinicId)) || null,
-    [normalizedClinics, activeClinicId]
+    () => displayClinics.find((c) => String(c.id) === String(activeClinicId)) || null,
+    [displayClinics, activeClinicId]
   );
   const hasUserLocation = !!userLocation;
 
@@ -166,6 +178,7 @@ const FindClinics = () => {
           lng: position.coords.longitude,
         };
         setUserLocation(loc);
+        setSearchResults([]); // Clear search results when using my location
         // In drag mode, reverse geocode for address display
         if (radiusMode === "drag") {
           reverseGeocode(loc).catch(() => {});
@@ -177,15 +190,77 @@ const FindClinics = () => {
     );
   };
 
-  // Forward geocode a typed address/location
+  // Search for clinics by name or address - FIXED VERSION
   const handleSearch = async () => {
-    if (!locationQuery.trim()) return;
-    try {
-      const res = await geocodeAddress(locationQuery.trim());
-      setUserLocation({ lat: res.lat, lng: res.lng });
-    } catch (err) {
-      // toast/error already logged
+    if (!locationQuery.trim()) {
+      // If search is empty, clear search results and show proximity-based results
+      setSearchResults([]);
+      return;
     }
+    
+    try {
+      setIsSearching(true);
+      const results = await geocodeAddress(locationQuery.trim());
+      console.log('Search results:', results);
+      
+      if (results && Array.isArray(results) && results.length > 0) {
+        // Convert search results to NormalizedClinic format for display
+        const clinicsFromSearch: NormalizedClinic[] = results.map((result, index) => ({
+          id: `search-${result.placeId}-${index}`,
+          name: result.name,
+          position: {
+            lat: result.lat,
+            lng: result.lng
+          },
+          rating: 0, // Default rating for search results
+          placeId: String(result.placeId),
+          raw: {
+            address: result.formattedAddress,
+            name: result.name,
+            formattedAddress: result.formattedAddress,
+            latitude: result.lat,
+            longitude: result.lng
+          },
+          durationText: "",
+          distanceText: "",
+          calculatedDistance: userLocation ? computeDistanceKm(
+            userLocation.lat,
+            userLocation.lng,
+            result.lat,
+            result.lng
+          ) : 0
+        }));
+        
+        setSearchResults(clinicsFromSearch);
+        
+        toast({
+          title: "Search completed",
+          description: `Found ${clinicsFromSearch.length} clinics matching "${locationQuery}"`,
+        });
+      } else {
+        setSearchResults([]);
+        toast({
+          title: "No results found",
+          description: "Please try a different search term.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      setSearchResults([]);
+      toast({
+        title: "Search failed",
+        description: "Could not find clinics. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Clear search and show proximity results
+  const handleClearSearch = () => {
+    setSearchResults([]);
+    setLocationQuery("");
   };
 
   // Handle selecting a clinic for directions
@@ -272,7 +347,7 @@ const FindClinics = () => {
   }, [userLocation]);
 
   const clinicsMarkers = useMemo(() => {
-    return normalizedClinics.map((c) => (
+    return displayClinics.map((c) => (
       <AdvancedMarker
         key={String(c.id)}
         position={c.position}
@@ -289,7 +364,7 @@ const FindClinics = () => {
         />
       </AdvancedMarker>
     ));
-  }, [normalizedClinics, activeClinicId]);
+  }, [displayClinics, activeClinicId]);
 
   // Native polyline overlay using Google Maps JS API since Polyline component is unavailable in our version
   const RoutePolyline = ({ path }: { path: { lat: number; lng: number }[] }) => {
@@ -428,21 +503,26 @@ const FindClinics = () => {
                 <h2 className="font-semibold text-lg">Search & Filters</h2>
               </div>
 
-              {/* Location input + actions */}
+              {/* Location input + actions - UPDATED */}
               <div className="space-y-3 mb-6">
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-foreground">Location</label>
-                  {userLocation && (
-                    <div className="flex items-center gap-1 text-xs text-green-600">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      {reverse.result?.formattedAddress ? 'Address found' : 'Location set'}
-                    </div>
+                  <label className="text-sm font-medium text-foreground">Search Clinics</label>
+                  {searchResults.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleClearSearch}
+                      className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Clear search
+                    </Button>
                   )}
                 </div>
+                
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input
-                    placeholder="Enter your location"
+                    placeholder="Search by clinic name or address"
                     className="pl-10"
                     value={locationQuery}
                     onChange={(e) => setLocationQuery(e.target.value)}
@@ -454,9 +534,18 @@ const FindClinics = () => {
                 
                 {/* Primary action buttons */}
                 <div className="grid grid-cols-2 gap-2">
-                  <Button onClick={handleSearch} size="sm" className="w-full">
-                    <Search className="h-4 w-4 mr-2" />
-                    Search
+                  <Button 
+                    onClick={handleSearch} 
+                    size="sm" 
+                    className="w-full"
+                    disabled={!locationQuery.trim() || isSearching}
+                  >
+                    {isSearching ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <Search className="h-4 w-4 mr-2" />
+                    )}
+                    {isSearching ? "Searching..." : "Search"}
                   </Button>
                   <Button onClick={handleUseMyLocation} variant="outline" size="sm" className="w-full">
                     <Navigation className="h-4 w-4 mr-2" />
@@ -606,16 +695,35 @@ const FindClinics = () => {
               </GoogleMapContainer>
 
               {/* Overlay status */}
-              {(isClinicsFetching || forward.loading || reverse.loading) && (
+              {(isClinicsFetching || forward.loading || reverse.loading || isSearching) && (
                 <div className="absolute top-2 left-2 bg-background/90 border border-border rounded px-3 py-1 text-xs">
                   Loading...
                 </div>
               )}
             </div>
 
+            {/* Results Header */}
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-lg">
+                {searchResults.length > 0 
+                  ? `Search Results (${searchResults.length})` 
+                  : `Nearby Clinics ${userLocation ? `(${displayClinics.length})` : ''}`
+                }
+              </h3>
+              {searchResults.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearSearch}
+                >
+                  Show Nearby Clinics
+                </Button>
+              )}
+            </div>
+
             {/* Clinic Cards */}
             <div className="space-y-4">
-              {normalizedClinics.map((clinic) => (
+              {displayClinics.map((clinic) => (
                 <div
                   key={String(clinic.id)}
                   className="bg-card rounded-xl p-4 md:p-6 shadow-soft border border-border flex flex-col md:flex-row gap-4 items-start"
@@ -742,14 +850,19 @@ const FindClinics = () => {
                 </div>
               ))}
 
-              {!normalizedClinics.length && hasUserLocation && (
+              {!displayClinics.length && searchResults.length === 0 && hasUserLocation && (
                 <div className="text-sm text-muted-foreground">
                   No clinics found within the selected radius. Try increasing the radius or changing filters.
                 </div>
               )}
-              {!hasUserLocation && (
+              {!hasUserLocation && searchResults.length === 0 && (
                 <div className="text-sm text-muted-foreground">
-                  Set your location to discover nearby clinics.
+                  Set your location to discover nearby clinics, or search for specific clinics by name or address.
+                </div>
+              )}
+              {!displayClinics.length && searchResults.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  No clinics found matching your search. Try different search terms.
                 </div>
               )}
             </div>

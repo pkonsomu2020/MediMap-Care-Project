@@ -46,7 +46,7 @@ HEADERS = {
 
 # Places API
 # ✅ Load environment file (auto-detects absolute path)
-# This will search upward from the current file’s directory for ".test_env"
+# This will search upward from the current file's directory for ".test_env"
 env_path = find_dotenv(".test_env", raise_error_if_not_found=False)
 if env_path:
     load_dotenv(env_path)
@@ -64,8 +64,8 @@ GENERAL_OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "all_kmhfl_facilit
 DETAIL_OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "all_kmhfl_facilities_details.json")
 
 # Optional runtime limits (for testing or controlled runs)
-MAX_PAGE_COUNT = 1              # Max number of pages to fetch (None = all)
-MAX_FACILITIES_FOR_DETAIL = 1  # Max facilities for Phase 2 (None = all)
+MAX_PAGE_COUNT = 0         # Max number of pages to fetch (None = all, 0 none)
+MAX_FACILITIES_FOR_DETAIL = None  # Max facilities for Phase 2 (None = all)
 
 
 # ============================================================
@@ -108,6 +108,92 @@ def end_stream(file_path: str):
     """
     with open(file_path, 'a', encoding='utf-8') as f:
         f.write('\n]')
+
+
+def get_last_entry_id(file_path: str) -> str:
+    """
+    Get the ID of the last entry in a JSON array file.
+    
+    Parameters:
+        file_path (str): Path to the JSON file
+        
+    Returns:
+        str: The ID of the last entry, or None if file doesn't exist or is empty
+    """
+    if not os.path.exists(file_path):
+        return None
+        
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            print("Extension was set to 'True'... Resuming from last entry.")
+            content = f.read().strip()
+            
+        # Handle empty or incomplete files
+        if not content or content == '[' or content == '[]':
+            return None
+            
+        # Remove the closing bracket and any trailing whitespace/comma
+        if content.endswith(']'):
+            content = content[:-1].strip()
+            if content.endswith(','):
+                content = content[:-1].strip()
+        
+        # Search backwards through lines for the "id" field
+        lines = content.split('\n')
+        print("Loaded content, searching for last entry ID...")
+        
+        for line in reversed(lines):
+            stripped_line = line.strip()
+            # Look for lines that contain "id": pattern
+            if stripped_line.startswith('"id":'):
+                # Extract the ID value - handle both quoted and unquoted values
+                id_part = stripped_line.split(':', 1)[1].strip()
+                # Remove trailing comma if present
+                if id_part.endswith(','):
+                    id_part = id_part[:-1].strip()
+                # Remove quotes if present
+                if (id_part.startswith('"') and id_part.endswith('"')) or (id_part.startswith("'") and id_part.endswith("'")):
+                    id_part = id_part[1:-1]
+                
+                print(f"✅ Found last entry ID: {id_part}")
+                return id_part
+        
+        print("❌ No ID field found in the file")
+        return None
+            
+    except Exception as e:
+        print(f"❌ Error reading last entry from {file_path}: {e}")
+        return None
+
+
+def prepare_file_for_append(file_path: str):
+    """
+    Prepare a JSON file for appending by removing the closing bracket.
+    
+    Parameters:
+        file_path (str): Path to the JSON file
+    """
+    if not os.path.exists(file_path):
+        start_stream(file_path)
+        return
+        
+    try:
+        with open(file_path, 'r+', encoding='utf-8') as f:
+            content = f.read().strip()
+            
+        # If file ends with ], remove it and any trailing comma
+        if content.endswith(']'):
+            content = content[:-1].strip()
+            if content.endswith(','):
+                content = content[:-1].strip()
+                
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+            
+    except Exception as e:
+        print(f"❌ Error preparing file {file_path} for append: {e}")
+        # If anything goes wrong, start fresh
+        start_stream(file_path)
 
 
 # ============================================================
@@ -342,10 +428,11 @@ def fetch_all_general_data() -> int:
     total_facilities = 0
     first_entry = True
 
-    start_stream(GENERAL_OUTPUT_FILE)
+    if MAX_PAGE_COUNT != 0:
+        start_stream(GENERAL_OUTPUT_FILE)
 
     try:
-        while current_url:
+        while current_url and MAX_PAGE_COUNT != 0:
             page_count += 1
 
             if page_count == 1:
@@ -392,7 +479,7 @@ def fetch_all_general_data() -> int:
                 break
 
     finally:
-        end_stream(GENERAL_OUTPUT_FILE) if page_count != 2 else None # It's two since we already wrote the first page in write_facilities_to_file
+        end_stream(GENERAL_OUTPUT_FILE) if page_count != 2 and MAX_PAGE_COUNT != 0 else None # It's two since we already wrote the first page in write_facilities_to_file
         print(f"\nPhase 1 complete. {total_facilities} facilities written to {GENERAL_OUTPUT_FILE}.")
 
     return total_facilities
@@ -402,7 +489,7 @@ def fetch_all_general_data() -> int:
 # --- PHASE 2: STREAMED DETAILED DATA FETCHING ---
 # ============================================================
 
-def fetch_all_detail_data():
+def fetch_all_detail_data(extension: bool = False):
     """
     Fetch detailed data for each facility ID obtained in Phase 1.
 
@@ -412,6 +499,9 @@ def fetch_all_detail_data():
 
     Uses HTML parsing since the detail endpoint is a React-rendered page,
     not a JSON API.
+
+    Parameters:
+        extension (bool): If True, resume from the last processed facility
     """
     print("\n--- PHASE 2: Detailed Facility Data ---")
 
@@ -419,9 +509,22 @@ def fetch_all_detail_data():
         print(f"General data file '{GENERAL_OUTPUT_FILE}' not found.")
         return
 
-    start_stream(DETAIL_OUTPUT_FILE)
-    first_entry = True
+    # Handle extension mode
+    last_processed_id = None
+    if extension and os.path.exists(DETAIL_OUTPUT_FILE):
+        last_processed_id = get_last_entry_id(DETAIL_OUTPUT_FILE)
+        if last_processed_id:
+            print(f"🔄 Resuming from facility ID: {last_processed_id}")
+            prepare_file_for_append(DETAIL_OUTPUT_FILE)
+        else:
+            print("🔄 No valid last entry found, starting from beginning")
+            start_stream(DETAIL_OUTPUT_FILE)
+    else:
+        start_stream(DETAIL_OUTPUT_FILE)
+
+    first_entry = (last_processed_id is None)
     processed_count = 0
+    skip_until_found = (last_processed_id is not None)
 
     try:
         # Load all facility objects from the general output
@@ -430,14 +533,20 @@ def fetch_all_detail_data():
 
         # Iterate through each facility record
         for facility in general_data:
+            facility_id = facility.get("id")
+            if not facility_id:
+                continue  # skip incomplete entries
+
+            # Skip facilities until we find the last processed one
+            if skip_until_found:
+                if facility_id == last_processed_id:
+                    skip_until_found = False
+                continue
+
             # Stop early if limit set for testing
             if MAX_FACILITIES_FOR_DETAIL and processed_count >= MAX_FACILITIES_FOR_DETAIL:
                 print(f"Reached MAX_FACILITIES_FOR_DETAIL ({MAX_FACILITIES_FOR_DETAIL}). Stopping.")
                 break
-
-            facility_id = facility.get("id")
-            if not facility_id:
-                continue  # skip incomplete entries
 
             detail_url = f"{DETAIL_API_BASE_URL}{facility_id}"
 
@@ -453,7 +562,7 @@ def fetch_all_detail_data():
                 first_entry = False
                 processed_count += 1
 
-                print(f"✅ Processed facility {processed_count}: {facility_id}")
+                print(f"✅ Processed facility {processed_count}: {facility_id} ==> ({facility.get('name')})")
                 time.sleep(1)  # delay between requests
 
             except requests.exceptions.RequestException as e:
@@ -474,10 +583,10 @@ def fetch_all_detail_data():
 # --- MAIN EXECUTION ---
 # ============================================================
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
     total = fetch_all_general_data()
 
-    if total > 0:
-        fetch_all_detail_data()
+    if total > 0 or MAX_PAGE_COUNT == 0:
+        fetch_all_detail_data(extension=True)
     else:
         print("No facilities retrieved in Phase 1. Skipping Phase 2.")

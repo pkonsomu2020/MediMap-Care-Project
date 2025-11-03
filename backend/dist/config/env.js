@@ -16,12 +16,14 @@ const envSchema = zod_1.z.object({
         message: 'SUPABASE_URL is required and must be a valid URL',
     }),
     SUPABASE_ANON_KEY: zod_1.z.string().optional(),
-    SUPABASE_SERVICE_ROLE_KEY: zod_1.z.string().min(1, {
-        message: 'SUPABASE_SERVICE_ROLE_KEY is required',
+    SUPABASE_SERVICE_KEY: zod_1.z.string().min(1, {
+        message: 'SUPABASE_SERVICE_KEY is required',
     }),
     JWT_SECRET: zod_1.z.string().optional(),
     JWT_EXPIRES_IN: zod_1.z.string().optional(),
     GOOGLE_MAPS_API_KEY: zod_1.z.string().optional(),
+    SUPABASE_CLINICS: zod_1.z.string().optional(),
+    MICROSERVICE_PORT: zod_1.z.string().optional(),
 });
 const parsed = envSchema.safeParse(process.env);
 if (!parsed.success) {
