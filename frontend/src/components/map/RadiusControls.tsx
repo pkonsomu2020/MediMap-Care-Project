@@ -50,7 +50,7 @@ export const RadiusControls: React.FC<RadiusControlsProps> = ({
       </div>
 
       {/* Drag mode toggle */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex justify-center">
         <Button
           type="button"
           variant={radiusMode === 'drag' ? 'default' : 'outline'}
@@ -58,7 +58,7 @@ export const RadiusControls: React.FC<RadiusControlsProps> = ({
           aria-pressed={radiusMode === 'drag'}
           aria-label="Enable drag radius mode"
           disabled={disabled}
-          className="w-full"
+          className="w-full max-w-[120px]"
           onClick={() => setRadiusMode(radiusMode === 'drag' ? 'preset' : 'drag')}
         >
           {radiusMode === 'drag' ? '🎯 Drag: On' : '🎯 Drag: Off'}

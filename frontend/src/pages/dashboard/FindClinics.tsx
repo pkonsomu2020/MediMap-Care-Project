@@ -689,10 +689,10 @@ const FindClinics = () => {
                       )}
                     </div>
 
-                    <div className="flex flex-wrap gap-2 mt-4">
+                    <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-4">
                       <Button
                         size="sm"
-                        className="bg-emerald-500 hover:bg-emerald-600 w-full"
+                        className="bg-emerald-500 hover:bg-emerald-600 flex-1 md:flex-none"
                         onClick={() => handleBookAppointment(clinic)}
                       >
                         Book Appointment
@@ -700,7 +700,7 @@ const FindClinics = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full"
+                        className="flex-1 md:flex-none"
                         onClick={() => handleViewDetails(clinic)}
                       >
                         View Details
@@ -708,7 +708,7 @@ const FindClinics = () => {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="w-full"
+                        className="flex-1 md:flex-none"
                         onClick={() => {
                           const phone = clinic.raw?.contact || clinic.phone;
                           if (phone) {
@@ -728,7 +728,7 @@ const FindClinics = () => {
                       <Button
                         variant="secondary"
                         size="sm"
-                        className="w-full"
+                        className="flex-1 md:flex-none"
                         onClick={() => handleGetDirections(clinic)}
                         disabled={!userLocation}
                       >
