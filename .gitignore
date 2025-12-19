@@ -2,24 +2,37 @@
 node_modules/
 
 # Build outputs
-backend/dist/
+**/dist/
 dist-ssr/
 build/
+*.tsbuildinfo
+
+# Expo
+.expo/
+*.expo/
+
+# Lock files (keep only package-lock.json)
+bun.lockb
+yarn.lock
 
 # Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-bun-debug.log*
 
 # Environment variables
 .env
 .env*.local
+packages/web/.env
+packages/backend/.env
+packages/mobile/.env
 
 # IDE
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS generated files
 .DS_Store
@@ -37,12 +50,8 @@ ENV/
 env.bak/
 venv.bak/
 
-# TypeScript
-*.tsbuildinfo
-
 # Temporary files
 *.tmp
-*.swp
 *.bak
 
 # Coverage
@@ -54,6 +63,13 @@ coverage/
 *.sqlite
 *.sqlite3
 
+# Testing
 TODO.md
-frontend/.env
-backend/.env
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Testing
+TODO.md

@@ -93,47 +93,54 @@ A comprehensive digital health platform featuring:
 - **Autoprefixer** - Cross-browser compatibility
 - **Concurrently** - Run multiple processes simultaneously
 
-## 🏗️ **Project Structure**
+## 🏗️ **Project Structure (Monorepo)**
+
+This project uses npm workspaces with the following structure:
 
 ```
 medimap-care/
-├── frontend/              # React TypeScript frontend
-│   ├── src/
-│   │   ├── components/    # Reusable UI components
-│   │   │   ├── dashboard/ # Dashboard-specific components
-│   │   │   ├── landing/   # Landing page components
-│   │   │   ├── map/       # Map-related components
-│   │   │   └── ui/        # Base UI components
-│   │   ├── pages/         # Application pages
-│   │   │   ├── dashboard/ # Dashboard pages
-│   │   │   ├── Landing.tsx # Homepage
-│   │   │   ├── Login.tsx   # Authentication
-│   │   │   └── Signup.tsx  # User registration
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── lib/           # Utility functions
-│   │   ├── config/        # Configuration files
-│   │   └── types/         # TypeScript type definitions
-│   ├── public/            # Static assets
-│   ├── package.json       # Frontend dependencies
-│   └── vite.config.ts     # Vite configuration
-├── backend/               # Express TypeScript backend
-│   ├── src/
-│   │   ├── routes/        # API route handlers
-│   │   ├── services/      # Business logic services
-│   │   ├── config/        # Configuration (Supabase, env)
-│   │   ├── middleware/    # Express middleware
-│   │   ├── lib/           # Utility functions
-│   │   └── app.ts         # Main application setup
-│   ├── migrations/        # Database migrations
-│   ├── seeding_scripts/   # Data seeding scripts
-│   ├── package.json       # Backend dependencies
-│   └── tsconfig.json      # TypeScript configuration
-├── docs/                  # Documentation
-│   ├── GAPS/              # Known gaps and risks
-│   └── ...
-├── shared/                # Shared types and interfaces
-├── package.json           # Root workspace configuration
-└── README.md              # Project documentation
+├── packages/
+│   ├── web/                   # React TypeScript web frontend (@medimap/web)
+│   │   ├── src/
+│   │   │   ├── components/    # Reusable UI components
+│   │   │   │   ├── dashboard/ # Dashboard-specific components
+│   │   │   │   ├── landing/   # Landing page components
+│   │   │   │   ├── map/       # Map-related components
+│   │   │   │   └── ui/        # Base UI components (shadcn/ui)
+│   │   │   ├── pages/         # Application pages
+│   │   │   ├── hooks/         # Custom React hooks
+│   │   │   ├── lib/           # Utility functions
+│   │   │   └── config/        # Configuration files
+│   │   ├── public/            # Static assets
+│   │   ├── package.json       # Web frontend dependencies
+│   │   └── vite.config.ts     # Vite configuration
+│   │
+│   ├── backend/               # Express TypeScript backend (@medimap/backend)
+│   │   ├── src/
+│   │   │   ├── routes/        # API route handlers
+│   │   │   ├── services/      # Business logic services
+│   │   │   ├── config/        # Configuration (Supabase, env)
+│   │   │   ├── middleware/    # Express middleware
+│   │   │   └── app.ts         # Main application setup
+│   │   ├── migrations/        # Database migrations
+│   │   ├── seeding_scripts/   # Data seeding scripts
+│   │   ├── package.json       # Backend dependencies
+│   │   └── tsconfig.json      # TypeScript configuration
+│   │
+│   └── mobile/                # React Native Expo app (@medimap/mobile)
+│       ├── src/
+│       │   ├── components/    # Mobile UI components
+│       │   ├── pages/         # Mobile screens
+│       │   ├── hooks/         # Custom hooks
+│       │   └── lib/           # Utilities
+│       ├── package.json       # Mobile app dependencies
+│       └── app.json           # Expo configuration
+│
+├── docs/                      # Documentation
+│   └── GAPS/                  # Known gaps and risks
+├── package.json               # Root workspace configuration
+├── package-lock.json          # Single lock file for all packages
+└── README.md                  # Project documentation
 ```
 
 ## 🚀 **Getting Started**
@@ -169,7 +176,7 @@ npm run dev:backend   # Backend only
 ### **Environment Setup**
 
 #### **Backend (.env)**
-Create `backend/.env` file:
+Create `packages/backend/.env` file:
 ```env
 NODE_ENV=development
 PORT=8001
@@ -197,8 +204,8 @@ TWILIO_AUTH_TOKEN=your-twilio-token
 TWILIO_PHONE_NUMBER=+1234567890
 ```
 
-#### **Frontend (.env)**
-Create `frontend/.env` file:
+#### **Web Frontend (.env)**
+Create `packages/web/.env` file:
 ```env
 VITE_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 VITE_GOOGLE_MAPS_MAP_ID=your-map-id
@@ -226,23 +233,26 @@ VITE_API_BASE_URL=http://localhost:8001/api
 ### **Development Commands**
 
 ```bash
-# Root level commands (run both services)
-npm run dev              # Start frontend and backend concurrently
-npm run build            # Build both frontend and backend
+# Root level commands (run services concurrently)
+npm run dev              # Start web frontend and backend concurrently
+npm run build            # Build both web frontend and backend
 npm run start            # Start both in production mode
-npm run lint             # Lint both projects
+npm run lint             # Lint all projects
+npm run test             # Run tests in all projects
 
-# Frontend commands
-npm run dev:frontend     # Start frontend only (port 3000)
-cd frontend && npm run dev
-cd frontend && npm run build
-cd frontend && npm run preview
-
-# Backend commands
+# Individual package commands
+npm run dev:web          # Start web frontend only (port 5173)
 npm run dev:backend      # Start backend only (port 8001)
-cd backend && npm run dev
-cd backend && npm run build
-cd backend && npm run test
+npm run dev:mobile       # Start Expo mobile app
+
+# Build individual packages
+npm run build:web        # Build web frontend
+npm run build:backend    # Build backend
+
+# Or navigate to package directories
+cd packages/web && npm run dev
+cd packages/backend && npm run dev
+cd packages/mobile && npm run start
 ```
 
 ## 🌍 **Kenya Healthcare Integration**
@@ -326,6 +336,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Support**: Available 24/7 for healthcare emergencies
 
 ## 🙏 **Acknowledgments**
+
+- **Google Maps Platform** for mapping and location services
+- **Supabase** for database and backend services
+- **Kenya Health Information System** for healthcare data
+- **React** and **Vite** communities for excellent tooling
+
+---
+
+**Built with ❤️ for better healthcare access in Kenya and beyond.**
+
 
 - **Google Maps Platform** for mapping and location services
 - **Supabase** for database and backend services
