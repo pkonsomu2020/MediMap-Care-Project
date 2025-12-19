@@ -17,7 +17,8 @@
     "start:backend": "npm run start -w @medimap/backend",
     "start:mobile": "npm run start -w @medimap/mobile",
     "lint": "npm run lint --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present"
+    "test": "npm run test --workspaces --if-present",
+    "check:backend": "curl -s http://localhost:8001/api/health || echo Backend not running on port 8001"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

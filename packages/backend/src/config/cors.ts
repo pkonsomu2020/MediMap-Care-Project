@@ -7,7 +7,21 @@ export function buildCors() {
 
   const options: CorsOptions = {
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      // Allow requests with no origin (mobile apps, Postman, etc.)
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      // In development, allow all localhost ports
+      const isDevelopment = process.env.NODE_ENV !== 'production';
+      if (isDevelopment && origin.match(/^http:\/\/localhost:\d+$/)) {
+        callback(null, true);
+        return;
+      }
+      
+      // Check against configured allowed origins
+      if (allowedOrigins.indexOf(origin) !== -1) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
