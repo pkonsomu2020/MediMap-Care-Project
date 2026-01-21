@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import usersRouter from './users';
 import clinicsRouter from './clinics';
 import appointmentsRouter from './appointments';
@@ -9,7 +9,7 @@ import healthRouter from '../health/health.routes';
 
 const router = Router();
 
-router.get('/', (req, res) => {
+router.get('/', (req: Request, res: Response) => {
   res.json({ message: 'Welcome to MediMap Care API' });
 });
 

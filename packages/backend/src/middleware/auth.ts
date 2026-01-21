@@ -2,9 +2,20 @@ import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
 export type AuthInfo = { userId: number; role?: string | undefined; email?: string | undefined };
-export interface AuthenticatedRequest extends Request { auth?: AuthInfo }
 
-export async function authMiddleware(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+declare global {
+  namespace Express {
+    interface Request {
+      auth?: AuthInfo;
+    }
+  }
+}
+
+export interface AuthenticatedRequest extends Request {
+  auth: AuthInfo;
+}
+
+export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : undefined;
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
