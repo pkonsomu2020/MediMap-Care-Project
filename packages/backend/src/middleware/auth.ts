@@ -11,9 +11,7 @@ declare global {
   }
 }
 
-export interface AuthenticatedRequest extends Request {
-  auth: AuthInfo;
-}
+export type AuthenticatedRequest = Request;
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization || '';
